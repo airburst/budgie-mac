@@ -3,7 +3,6 @@ import SwiftData
 import Testing
 @testable import BudgieMacKit
 
-private typealias Category = BudgieMacKit.Category
 
 /// S-015: the category tree.
 @MainActor

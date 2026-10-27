@@ -102,6 +102,29 @@ enum SeedData {
         schedule(card, "Gym Membership", "-35", "FREQ=MONTHLY;BYMONTHDAY=16", due: 20, active: false)
         schedule(current, "Car Insurance", "-480", "FREQ=YEARLY", due: 60)
 
+        // Envelopes for September and October, with one overspent and money moved.
+        let food = Envelope(name: "Groceries", sortOrder: 0)
+        let bills = Envelope(name: "Bills", sortOrder: 1)
+        let fun = Envelope(name: "Eating Out", sortOrder: 2)
+        let home = Envelope(name: "Home", sortOrder: 3)
+        for envelope in [food, bills, fun, home] {
+            envelope.createdAt = day(60)
+            context.insert(envelope)
+        }
+        context.insert(EnvelopeCategory(envelope: food, category: groceries))
+        context.insert(EnvelopeCategory(envelope: bills, category: utilities))
+        context.insert(EnvelopeCategory(envelope: fun, category: eatingOut))
+        context.insert(EnvelopeCategory(envelope: home, category: household))
+        for month in ["2026-09", "2026-10"] {
+            context.insert(BudgetAllocation(envelope: food, month: month, assigned: money("220")))
+            context.insert(BudgetAllocation(envelope: bills, month: month, assigned: money("90")))
+            context.insert(BudgetAllocation(envelope: fun, month: month, assigned: money("20")))
+            context.insert(BudgetAllocation(envelope: home, month: month, assigned: money("1150")))
+        }
+        let treat = BudgetTransfer(from: food, to: fun, month: "2026-10", amount: money("10"))
+        treat.notes = "Birthday dinner"
+        context.insert(treat)
+
         // Payees with defaults, as saving those transactions would have made them.
         context.insert(Payee(name: "Corner Grocer", category: groceries, amount: money("-70.20")))
         context.insert(Payee(name: "Employer Ltd", category: salary, amount: money("2345.67")))

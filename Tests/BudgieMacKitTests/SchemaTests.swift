@@ -3,7 +3,6 @@ import SwiftData
 import Testing
 @testable import BudgieMacKit
 
-private typealias Category = BudgieMacKit.Category
 
 /// S-001: every model round-trips through a store on disk with every field.
 @MainActor

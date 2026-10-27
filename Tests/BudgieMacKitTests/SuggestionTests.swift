@@ -3,7 +3,6 @@ import SwiftData
 import Testing
 @testable import BudgieMacKit
 
-private typealias Category = BudgieMacKit.Category
 
 /// S-012, S-013, S-014.
 @MainActor

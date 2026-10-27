@@ -3,7 +3,6 @@ import SwiftData
 import Testing
 @testable import BudgieMacKit
 
-private typealias Category = BudgieMacKit.Category
 
 /// S-002. The fixture was written by Budgie's own exporter
 /// (`createPortableData` + `serializePortableData`), so its checksum is real.

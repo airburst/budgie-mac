@@ -431,7 +431,7 @@ Acceptance:
 - [unit] Available to Budget counts all income received up to the month, minus all amounts assigned up to the month, minus overspending (Fixes: only the current month's income was counted).
 - [unit] Available per envelope = rolled over + assigned + spending + money moved in − money moved out (port `budget-computations.ts` and its tests).
 - [snap] Progress shows how much of the money available is spent, and turns red only when available is below zero (Fixes: bars ignore moved money).
-Status: todo
+Status: done
 
 ### S-037 Start budgeting from a template
 As the user, with no envelopes I pick Starter, Detailed or Minimal, or start from scratch.
@@ -440,7 +440,7 @@ Depends: S-036
 Acceptance:
 - [snap] Three template cards list their envelopes.
 - [unit] A template creates its envelopes and maps the matching default categories.
-Status: todo
+Status: done
 
 ### S-038 Add an envelope
 As the user, I name an envelope and choose the categories it tracks.
@@ -449,7 +449,7 @@ Depends: S-036
 Acceptance:
 - [snap] The categories are grouped by parent; ones already in another envelope are turned off and name that envelope.
 - [unit] A category can belong to only one envelope.
-Status: todo
+Status: done
 
 ### S-039 Edit or delete an envelope
 As the user, I change an envelope's name or categories, or delete it.
@@ -458,7 +458,7 @@ Depends: S-038
 Acceptance:
 - [snap] Delete asks for confirmation; closing with unsaved edits asks "Discard changes?".
 - [unit] Deleting an envelope frees its categories and keeps past months' totals.
-Status: todo
+Status: done
 
 ### S-040 Assign money to an envelope
 As the user, I click an envelope's assigned amount, type a new one and press Return.
@@ -467,7 +467,7 @@ Depends: S-036
 Acceptance:
 - [self] Return saves, Escape cancels, and Tab moves to the next envelope's amount.
 - [unit] Available to Budget and the envelope's available update together.
-Status: todo
+Status: done (Return, Escape and Tab are the text field's own; check by hand)
 
 ### S-041 Move money between envelopes
 As the user, I move an amount from one envelope to another for the month.
@@ -476,7 +476,7 @@ Depends: S-036
 Acceptance:
 - [snap] From, To, Amount and Notes; Move is turned off until From ≠ To and Amount > 0.
 - [unit] Both envelopes' available change by the amount; Available to Budget does not change.
-Status: todo
+Status: done
 
 ### S-042 Copy last month's budget
 As the user, I fill this month's empty assignments from last month.
@@ -485,7 +485,7 @@ Depends: S-040
 Acceptance:
 - [snap] The confirm button is a normal default button, not destructive (Fixes: "Fill" styled destructive).
 - [unit] Only envelopes with no assignment this month are filled.
-Status: todo
+Status: done
 
 ### S-043 Reorder envelopes
 As the user, I drag an envelope to a new position, or use Move Up and Move Down.
@@ -494,7 +494,7 @@ Depends: S-036
 Acceptance:
 - [self] Drag and the context menu both save a new sort order.
 - [snap] Move Up is turned off on the first row.
-Status: todo
+Status: done (drag and Move Up/Down; check drag by hand)
 
 ## M6 Reports
 

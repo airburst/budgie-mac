@@ -93,6 +93,11 @@ final class AppModel {
     /// The Add or Edit Scheduled Transaction sheet, when open (S-026).
     var scheduleSheet: ScheduleSheetMode?
 
+    /// The Budget page's month, "2026-10" (S-036).
+    var budgetMonth = Budget.thisMonth
+    var envelopeSheet: EnvelopeSheetMode?
+    var movingMoney = false
+
     /// The account whose forecast replaces its register (S-034).
     var forecastFor: UUID?
 

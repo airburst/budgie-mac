@@ -123,6 +123,32 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("budget") == true {
+                // M5: templates (no envelopes), Add Envelope, Move Money.
+                let context = model.container.mainContext
+                let envelopes = (try? context.fetch(FetchDescriptor<Envelope>())) ?? []
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    model.sidebar = .page(.budget)
+                    model.budgetMonth = "2026-10"
+                    envelopes.forEach { $0.active = false }
+                    try? await Task.sleep(for: .seconds(0.8))
+                    capture(to: "\(dir)/budget-templates-\(mode).png")
+                    envelopes.forEach { $0.active = true }
+                    if let food = envelopes.first(where: { $0.name == "Groceries" }) {
+                        model.envelopeSheet = .edit(food.persistentModelID)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/edit-envelope-\(mode).png", withSheet: true)
+                        model.envelopeSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                    model.movingMoney = true
+                    try? await Task.sleep(for: .seconds(1))
+                    capture(to: "\(dir)/move-money-\(mode).png", withSheet: true)
+                    model.movingMoney = false
+                    try? await Task.sleep(for: .seconds(0.5))
+                }
+            }
             if only == nil || only?.contains("forecast") == true {
                 let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
                 if let current = open.first(where: { $0.name == "Everyday Current" }) {

@@ -29,3 +29,9 @@ Symptom: the self-test found the new row missing from the ticked set.
 Cause: its `persistentModelID` was stored before `context.save()`; saving replaces a new model's temporary id with a permanent one.
 Fix: store ids of new models only after saving.
 Rule: never keep a new model's `persistentModelID` from before its first save.
+
+## Correct Decimal results failed their tests (M4, M5)
+Symptom: `#expect(total == 4000 - 700 - 50)` failed while `#expect(total == 3250)` passed for the same value.
+Cause: an arithmetic expression of integer literals beside a `Decimal` in `#expect` doesn't type-check the way it reads (it isn't evaluated as Decimal arithmetic).
+Fix: write the expected amount as one literal, or build it with `Decimal(string:)`.
+Rule: in tests, never compare a `Decimal` with arithmetic on bare literals; write the expected value out.

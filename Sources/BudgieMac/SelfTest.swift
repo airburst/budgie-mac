@@ -191,6 +191,29 @@ enum SelfTest {
                 try? context.save()
             }
 
+            // M5: assigning and moving money keep Available to Budget honest, with Undo.
+            let month = "2031-01"
+            let first = Envelope(name: "Self-test A"), second = Envelope(name: "Self-test B")
+            context.insert(first)
+            context.insert(second)
+            try? context.save()
+            let startATB = Budget.summary(for: month, in: context).availableToBudget
+            let undoBudget = UndoManager()
+            model.assign(100, to: first, in: month, undoManager: undoBudget)
+            let assigned = Budget.summary(for: month, in: context)
+            check("assigning lowers Available to Budget and fills the envelope",
+                  assigned.availableToBudget == startATB - 100 && assigned.lines.first { $0.envelope === first }?.available == 100)
+            model.moveMoney(30, from: first, to: second, in: month, notes: "", undoManager: nil)
+            let moved = Budget.summary(for: month, in: context)
+            check("moving money changes both envelopes but not Available to Budget",
+                  moved.availableToBudget == assigned.availableToBudget
+                  && moved.lines.first { $0.envelope === second }?.available == 30)
+            undoBudget.undo()
+            check("Undo Assign puts the amount back", Budget.assigned(to: first, in: month) == 0)
+            Envelopes.delete(first, context: context)
+            Envelopes.delete(second, context: context)
+            try? context.save()
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)
