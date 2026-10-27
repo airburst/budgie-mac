@@ -34,6 +34,26 @@ extension AppModel {
     }
 
     /// The open account, or the one selected in the sidebar, for the Account menu.
+    /// Open accounts in the order people dragged them into.
+    var orderedAccounts: [Account] {
+        AccountOrder.sorted((try? container.mainContext.fetch(Account.openAccounts)) ?? [], by: preferences.accountOrder)
+    }
+
+    /// Saves a new account order, with Undo.
+    func setAccountOrder(_ order: [UUID], undoManager: UndoManager?) {
+        let before = preferences.accountOrder
+        preferences.accountOrder = order
+        try? container.mainContext.save()
+        undoManager?.registerUndo(withTarget: self) { model in model.setAccountOrder(before, undoManager: undoManager) }
+        undoManager?.setActionName("Move Account")
+    }
+
+    /// Account > Move Account Up (-1) or Down (+1). Does nothing at either end.
+    func moveAccount(_ account: Account, by step: Int, undoManager: UndoManager?) {
+        guard let order = AccountOrder.moving(account, by: step, in: orderedAccounts) else { return }
+        setAccountOrder(order, undoManager: undoManager)
+    }
+
     var menuAccount: Account? {
         guard let uuid = openAccount else { return nil }
         return try? container.mainContext.fetch(FetchDescriptor<Account>(predicate: #Predicate { $0.uuid == uuid })).first
@@ -74,6 +94,9 @@ struct AccountMenuItems: View {
         Button("Edit Account…") { model.accountSheet = .edit(account.uuid) }
         Button("Reconcile…") { model.reconcileSheet = ReconcileTarget(account: account.uuid) }
         Divider()
+        Button("Move Up") { model.moveAccount(account, by: -1, undoManager: undoManager) }
+        Button("Move Down") { model.moveAccount(account, by: 1, undoManager: undoManager) }
+        Divider()
         Button("Close Account…", role: .destructive) { model.closeAccount(account, undoManager: undoManager) }
     }
 }
@@ -95,6 +118,17 @@ struct AccountCommands: View {
         Button("Forecast") { model.forecastFor = model.openAccount }
             .keyboardShortcut("f", modifiers: [.command, .shift])
             .disabled(model.openAccount == nil)
+        Divider()
+        Button("Move Account Up") {
+            if let account = model.menuAccount { model.moveAccount(account, by: -1, undoManager: undoManager) }
+        }
+        .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+        .disabled(model.openAccount == nil)
+        Button("Move Account Down") {
+            if let account = model.menuAccount { model.moveAccount(account, by: 1, undoManager: undoManager) }
+        }
+        .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+        .disabled(model.openAccount == nil)
         Divider()
         Button("Close Account…") {
             if let account = model.menuAccount { model.closeAccount(account, undoManager: undoManager) }

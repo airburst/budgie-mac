@@ -41,6 +41,8 @@ public enum BudgieExport {
                     ("key", .string($0.key)), ("ctrl", .bool($0.ctrl)), ("accountPublicId", .string(id($0.accountUUID))),
                 ]) })))
             }
+            let order = preferences.accountOrder.filter { uuid in accounts.contains { $0.uuid == uuid } }
+            if !order.isEmpty { prefs.append(("accountOrder", .array(order.map { .string(id($0)) }))) }
         }
 
         var package: [(String, JSON)] = [

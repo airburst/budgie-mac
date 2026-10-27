@@ -272,6 +272,14 @@ public final class Preferences {
         set { accountShortcutsData = try? JSONEncoder().encode(newValue) }
     }
 
+    /// The order people dragged accounts into, as JSON. Empty means by name.
+    public var accountOrderData: Data?
+
+    public var accountOrder: [UUID] {
+        get { accountOrderData.flatMap { try? JSONDecoder().decode([UUID].self, from: $0) } ?? [] }
+        set { accountOrderData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue) }
+    }
+
     public init() {}
 }
 

@@ -147,6 +147,8 @@ struct BudgieExportTests {
     func roundTrip() throws {
         let first = try BudgieSchema.inMemory()
         try BudgieImport.replaceAll(in: first.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
+        let order = try first.mainContext.fetch(FetchDescriptor<Account>()).map(\.uuid).reversed() as [UUID]
+        try first.mainContext.fetch(FetchDescriptor<Preferences>()).first?.accountOrder = order
         let exported = BudgieExport.data(from: first.mainContext, exportedAt: Date(timeIntervalSince1970: 1_800_000_000))
         // Our own reader checks the checksum against the file's bytes.
         let package = try BudgieImport.read(exported)
@@ -165,6 +167,7 @@ struct BudgieExportTests {
         #expect(a == b)
         let prefs = try second.mainContext.fetch(FetchDescriptor<Preferences>()).first
         #expect(prefs?.hideReconciled == true && prefs?.accountShortcuts.count == 1)
+        #expect(prefs?.accountOrder == order, "The dragged account order survives export and import")
     }
 
     @Test("Numbers and strings are written as JavaScript writes them")

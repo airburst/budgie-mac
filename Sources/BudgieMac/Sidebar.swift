@@ -8,19 +8,25 @@ struct Sidebar: View {
     @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name)
     private var accounts: [Account]
+    @Query private var preferences: [Preferences]
 
     var body: some View {
         @Bindable var model = model
+        let accounts = AccountOrder.sorted(accounts, by: preferences.first?.accountOrder ?? [])
         List(selection: $model.sidebar) {
             pageRow(.accounts)
             if !accounts.isEmpty {
                 Section("Accounts") {
                     ForEach(accounts) { account in
-                    SidebarAccountRow(account: account)
-                        .tag(SidebarSelection.account(account.uuid))
-                        .contextMenu {
-                            AccountMenuItems(account: account, undoManager: undoManager)
-                        }
+                        SidebarAccountRow(account: account)
+                            .tag(SidebarSelection.account(account.uuid))
+                            .contextMenu {
+                                AccountMenuItems(account: account, undoManager: undoManager)
+                            }
+                    }
+                    // Drag accounts into any order; it's remembered (Account > Move Account Up/Down too).
+                    .onMove { offsets, destination in
+                        model.setAccountOrder(AccountOrder.moving(accounts, from: offsets, to: destination), undoManager: undoManager)
                     }
                 }
             }

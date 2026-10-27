@@ -246,6 +246,7 @@ public enum BudgieImport {
         preferences.accountShortcuts = (source.accountShortcuts ?? []).compactMap { shortcut in
             accounts[shortcut.accountPublicId].map { AccountShortcut(key: shortcut.key, ctrl: shortcut.ctrl ?? false, accountUUID: $0.uuid) }
         }
+        preferences.accountOrder = (source.accountOrder ?? []).compactMap { accounts[$0]?.uuid }
         context.insert(preferences)
         return summary
     }
@@ -311,6 +312,8 @@ extension BudgieImport {
             var theme: String?
             var startupPage: String?
             var accountShortcuts: [Shortcut]?
+            /// BudgieMac's own key; Budgie keeps preferences it doesn't know.
+            var accountOrder: [String]?
         }
 
         struct AccountRow: Decodable, Synced, Sendable {

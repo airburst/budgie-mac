@@ -75,3 +75,5 @@ Budgie's single keys fire while you type in a web page; on the Mac they become m
 | R | Reconcile… | ⌘R |
 
 Account shortcuts (S-050) use ⌃ with a key, so they never clash with these.
+
+Accounts appear in the order people drag them into in the sidebar; Account > Move Account Up (⌥⌘↑) and Move Account Down (⌥⌘↓) do the same from the keyboard. New accounts go last, by name. The order is saved in exports as the preference `accountOrder`, which Budgie keeps but ignores.

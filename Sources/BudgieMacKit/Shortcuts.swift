@@ -53,6 +53,8 @@ public enum Shortcuts {
         KeyShortcut("r", .command, "Reconcile…"),
         KeyShortcut("f", [.command, .shift], "Forecast"),
         KeyShortcut("e", [.command, .option], "Edit Account…"),
+        KeyShortcut("↑", [.command, .option], "Move Account Up"),
+        KeyShortcut("↓", [.command, .option], "Move Account Down"),
         KeyShortcut("e", .command, "Edit Transaction…"),
         KeyShortcut("k", .command, "Mark as Cleared"),
         KeyShortcut("[", .command, "Previous Month"),

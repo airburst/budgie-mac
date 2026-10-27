@@ -7,8 +7,12 @@ struct AccountsPage: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name)
-    private var accounts: [Account]
+    private var storedAccounts: [Account]
+    @Query private var preferences: [Preferences]
     @State private var selection = Set<Account.ID>()
+
+    /// In the sidebar's order.
+    private var accounts: [Account] { AccountOrder.sorted(storedAccounts, by: preferences.first?.accountOrder ?? []) }
 
     var body: some View {
         Group {

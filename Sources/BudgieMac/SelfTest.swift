@@ -61,6 +61,20 @@ enum SelfTest {
             }
             // S-006: adding a transaction updates the balance at once and can be undone.
             let wallet = model.add(AccountDraft(currency: "GBP").named("Self-test Wallet"), undoManager: nil)
+            // Accounts can be put in any order, which is remembered and can be undone.
+            _ = model.add(AccountDraft(currency: "GBP").named("Self-test Alpha"), undoManager: nil)
+            _ = model.add(AccountDraft(currency: "GBP").named("Self-test Zulu"), undoManager: nil)
+            if let last = model.orderedAccounts.last, model.orderedAccounts.count > 1 {
+                let undoMove = UndoManager()
+                let before = model.orderedAccounts.map(\.uuid)
+                model.setAccountOrder(AccountOrder.moving(model.orderedAccounts, from: [model.orderedAccounts.count - 1], to: 0), undoManager: undoMove)
+                check("dragging the last account to the top puts it first", model.orderedAccounts.first === last)
+                model.moveAccount(last, by: -1, undoManager: undoMove)
+                check("Move Account Up does nothing at the top", model.orderedAccounts.first === last)
+                check("Undo is named Undo Move Account", undoMove.undoActionName == "Move Account")
+                undoMove.undo()
+                check("undoing the move restores the order", model.orderedAccounts.map(\.uuid) == before)
+            }
             var spend = TransactionDraft()
             spend.payee = "Self-test Café"
             spend.withdrawal = "3.40"
@@ -292,7 +306,9 @@ enum SelfTest {
             for shortcut in Shortcuts.builtIn where !["Undo", "Redo", "Close Window", "Quit", "Hide", "Minimize", "Settings…", "Previous Month", "Next Month"].contains(shortcut.title) {
                 let title = shortcut.title == "Find" ? "Find in Register" : shortcut.title
                 let found = item(title)
-                check("menu has \(title) \(shortcut.symbols)", found?.keyEquivalent.lowercased() == shortcut.key,
+                // AppKit stores arrow keys as function-key characters.
+                let key = ["↑": "\u{F700}", "↓": "\u{F701}"][shortcut.key] ?? shortcut.key
+                check("menu has \(title) \(shortcut.symbols)", found?.keyEquivalent.lowercased() == key,
                       "found \(found.map { "'\($0.keyEquivalent)'" } ?? "nothing")")
             }
             for title in ["New Transaction", "Reconcile…", "Forecast", "Edit Transaction…", "Delete Transaction", "Mark as Cleared"] {
