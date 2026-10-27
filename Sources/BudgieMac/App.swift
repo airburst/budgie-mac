@@ -58,6 +58,9 @@ struct BudgieMacApp: App {
                     .keyboardShortcut("i", modifiers: [.command, .shift])
                 Button("Export Budgie Data…") { model.exportData() }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
+                Divider()
+                Button("Import QIF…") { model.chooseQifFile() }
+                    .keyboardShortcut("i", modifiers: [.command, .option])
             }
         }
 

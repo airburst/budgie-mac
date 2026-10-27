@@ -123,6 +123,24 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("qif") == true {
+                // S-055: a bank QIF with one row already in the register.
+                let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
+                if let current = open.first(where: { $0.name == "Everyday Current" }) {
+                    let file = URL(fileURLWithPath: "/tmp/BudgieMac-snapshot.qif")
+                    try? "!Type:Bank\nD25/10/2026\nPCorner Grocer\nT-81.02\n^\nD26/10/2026\nPBig Supermarket\nT-108.45\nMWeekly shop\n^\nD27/10/2026\nPEmployer Ltd\nT2345.67\n^\n"
+                        .write(to: file, atomically: true, encoding: .utf8)
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        model.sidebar = .account(current.uuid)
+                        model.openQif(file, account: current.uuid)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/qif-review-\(mode).png", withSheet: true)
+                        model.qifReview = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                }
+            }
             if only == nil || only?.contains("budget") == true {
                 // M5: templates (no envelopes), Add Envelope, Move Money.
                 let context = model.container.mainContext

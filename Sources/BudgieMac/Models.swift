@@ -82,6 +82,9 @@ final class AppModel {
 
     /// The selected rows in the open register.
     var selectedTransactions = Set<PersistentIdentifier>()
+    /// S-055: a QIF file waiting for review.
+    var qifReview: QifReview?
+
     /// S-051: the register's search text, and whether the field is active (⌘F).
     var registerSearch = ""
     var registerSearching = false

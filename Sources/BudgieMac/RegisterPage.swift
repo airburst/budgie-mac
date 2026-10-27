@@ -28,6 +28,12 @@ struct RegisterPage: View {
                 .searchable(text: Bindable(model).registerSearch, isPresented: Bindable(model).registerSearching,
                             placement: .toolbar, prompt: "Payee, category, notes or amount")
                 .onChange(of: account.uuid) { _, _ in model.registerSearch = "" }
+                // S-055: drop a .qif file on the register to review it for this account.
+                .dropDestination(for: URL.self) { urls, _ in
+                    guard let url = urls.first(where: { $0.pathExtension.lowercased() == "qif" }) else { return false }
+                    model.openQif(url, account: account.uuid)
+                    return true
+                }
                 .navigationTitle(account.name)
                 .navigationSubtitle(subtitle(account))
                 .toolbar { toolbar }

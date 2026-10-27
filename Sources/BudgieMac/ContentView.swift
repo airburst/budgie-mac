@@ -23,6 +23,9 @@ struct ContentView: View {
         .sheet(item: Bindable(model).reconcileSheet) { target in
             NavigationStack { ReconcileStartSheet(accountID: target.account) }
         }
+        .sheet(item: Bindable(model).qifReview) { review in
+            NavigationStack { QifReviewSheet(review: review) }
+        }
         .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)

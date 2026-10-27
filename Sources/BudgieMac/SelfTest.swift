@@ -221,6 +221,15 @@ enum SelfTest {
                   && walletRows.contains { Register.matches($0.transaction, $0.transaction.payee) })
             check("an empty search shows every row", walletRows.filter { Register.matches($0.transaction, "") }.count == walletRows.count)
 
+            // S-055: a QIF row that's already there is a duplicate; the new one imports.
+            if let qif = try? Qif.parse("!Type:Bank\nD01/02/2031\nPSelf-test QIF\nT-12.34\n^") {
+                let before = wallet.transactions.count
+                model.importQif(qif.rows, into: wallet, undoManager: nil)
+                check("QIF rows import into the account", wallet.transactions.count == before + 1)
+                let again = Qif.match(qif.rows, existing: wallet.transactions, lastReconciled: nil)
+                check("importing the same QIF again flags it as a duplicate", again.first?.status == .duplicate)
+            }
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

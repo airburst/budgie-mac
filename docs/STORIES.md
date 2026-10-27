@@ -610,7 +610,7 @@ Acceptance:
 - [unit] Port `qif-parser.ts` and `qif-matcher.ts` with their tests; duplicates are matched by date, amount and payee.
 - [snap] The review sheet shows a New or Duplicate badge, Date, Payee, Withdrawal, Deposit and a checkbox per row.
 - [self] Dropping a .qif file on a register opens the same review.
-Status: todo
+Status: done (duplicates match Budgie's rule, amount within 3 days, preferring the same payee; check dropping a file by hand)
 
 ## M8 Polish
 
