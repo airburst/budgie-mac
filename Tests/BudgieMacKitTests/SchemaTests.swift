@@ -209,3 +209,8 @@ func softDeleteAfterSave() throws {
     try context.save()
     #expect(account.softDeleted)
 }
+
+@Test("Counted words", arguments: [(1, "1 account"), (0, "0 accounts"), (1234, "1,234 accounts")])
+func countedWords(_ number: Int, expected: String) {
+    #expect(Words.count(number, "account").replacingOccurrences(of: "\u{202F}", with: ",") == expected || Words.count(number, "account") == expected)
+}

@@ -44,7 +44,7 @@ extension AppModel {
     func closeAccount(_ account: Account, undoManager: UndoManager?) {
         let count = account.transactions.count
         Confirm.destructive("Close “\(account.name)”?",
-                            message: "It leaves the sidebar and the totals. Its \(ImportFlow.count(count, "transaction")) stay in reports for past dates.",
+                            message: "It leaves the sidebar and the totals. Its \(Words.count(count, "transaction")) stay in reports for past dates.",
                             button: "Close Account") {
             self.setClosed(account, true, undoManager: undoManager)
         }

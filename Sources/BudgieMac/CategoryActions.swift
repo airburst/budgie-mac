@@ -38,7 +38,7 @@ extension AppModel {
             setDeleted(category, undoManager: undoManager)
         } else {
             Confirm.destructive("Delete “\(category.name)”?",
-                                message: "\(ImportFlow.count(used, "transaction")) use it and will become uncategorised.",
+                                message: "\(Words.count(used, "transaction")) use it and will become uncategorised.",
                                 button: "Delete") { self.setDeleted(category, undoManager: undoManager) }
         }
     }

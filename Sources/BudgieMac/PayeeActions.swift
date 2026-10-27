@@ -25,8 +25,8 @@ extension AppModel {
             return
         }
         let alert = NSAlert()
-        alert.messageText = "Also Rename \(ImportFlow.count(used, "Past Transaction").capitalized)?"
-        alert.informativeText = "\(ImportFlow.count(used, "transaction")) say “\(payee.name)”. They can say “\(draft.cleanName)” instead."
+        alert.messageText = "Also Rename \(Words.count(used, "Past Transaction").capitalized)?"
+        alert.informativeText = "\(Words.count(used, "transaction")) say “\(payee.name)”. They can say “\(draft.cleanName)” instead."
         alert.addButton(withTitle: "Rename Transactions")
         alert.addButton(withTitle: "Keep Old Name")
         alert.beginSheetModal(for: window) { response in

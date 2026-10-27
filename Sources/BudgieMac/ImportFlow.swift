@@ -56,7 +56,7 @@ final class ImportFlow {
     /// Asks before replacing, with Cancel as the default (UI/Confirm.swift).
     func confirm(_ request: Pending, in model: AppModel) {
         Confirm.destructive("Replace All Data with This Budgie File?",
-                            message: "Your \(Self.count(request.accounts, "account")) and \(Self.count(request.transactions, "transaction")) in BudgieMac will be replaced. This can't be undone. Export your data first if you want a copy.",
+                            message: "Your \(Words.count(request.accounts, "account")) and \(Words.count(request.transactions, "transaction")) in BudgieMac will be replaced. This can't be undone. Export your data first if you want a copy.",
                             button: "Replace All Data") { self.replace(with: request, in: model) }
     }
 
@@ -64,17 +64,12 @@ final class ImportFlow {
         do {
             let summary = try BudgieImport.replaceAll(in: model.container.mainContext, with: request.package)
             model.sidebar = .page(.accounts)
-            let text = "Imported \(Self.count(summary.accounts, "account")) and \(Self.count(summary.transactions, "transaction")) from Budgie."
+            let text = "Imported \(Words.count(summary.accounts, "account")) and \(Words.count(summary.transactions, "transaction")) from Budgie."
             banner = text
             AccessibilityNotification.Announcement(text).post()
         } catch {
             failure = Failure(fileName: request.fileName, message: error.localizedDescription)
         }
-    }
-
-    /// "1 account", "1,234 transactions".
-    static func count(_ number: Int, _ noun: String) -> String {
-        "\(number.formatted()) \(noun)\(number == 1 ? "" : "s")"
     }
 }
 
