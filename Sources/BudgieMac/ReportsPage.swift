@@ -184,11 +184,11 @@ private struct IncomeExpensesCard: View {
                     ForEach(months, id: \.month) { month in
                         BarMark(x: .value("Month", Budget.title(of: month.month)), y: .value("Amount", NSDecimalNumber(decimal: month.income).doubleValue))
                             .foregroundStyle(by: .value("Kind", "Income"))
-                            .position(by: .value("Kind", "Income"))
+                            .position(by: .value("Kind", "Income")) // grid: ok Swift Charts grouping, not layout
                             .cornerRadius(4)
                         BarMark(x: .value("Month", Budget.title(of: month.month)), y: .value("Amount", NSDecimalNumber(decimal: month.expenses).doubleValue))
                             .foregroundStyle(by: .value("Kind", "Expenses"))
-                            .position(by: .value("Kind", "Expenses"))
+                            .position(by: .value("Kind", "Expenses")) // grid: ok Swift Charts grouping, not layout
                             .cornerRadius(4)
                     }
                 }
