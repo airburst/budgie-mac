@@ -164,7 +164,7 @@ UX:
 - States: a reconciled row shows a lock, and clicking it does nothing; its tooltip says "Reconciled on 22 Sep 2026. Reconciled transactions can't be marked as uncleared."; mixed selection: the menu says "Mark as Cleared" when any selected row is uncleared
 - Words: "Mark as Cleared", "Mark as Uncleared"; status icon tooltip "Mark as cleared (Space)"
 - Access: the status cell is a toggle with VoiceOver label "Cleared" and value "on" or "off"; Space works on several selected rows; colour plus icon plus word
-Status: todo
+Status: done
 
 ## M2 Organize: categories, payees, transfers
 

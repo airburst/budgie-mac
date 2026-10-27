@@ -47,6 +47,7 @@ struct BudgieMacApp: App {
                 Button("Edit Transaction…") { model.editSelectedTransaction() }
                     .keyboardShortcut("e")
                     .disabled(!model.canEditTransaction)
+                ClearingCommand(model: model)
             }
             CommandGroup(after: .newItem) {
                 Divider()
@@ -101,5 +102,17 @@ enum Store {
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }
+    }
+}
+
+/// Transaction > Mark as Cleared (⌘K). Menus get the focused window's undo manager.
+private struct ClearingCommand: View {
+    let model: AppModel
+    @Environment(\.undoManager) private var undoManager
+
+    var body: some View {
+        Button(model.clearingTitle) { model.toggleCleared(model.selectedTransactionRows, undoManager: undoManager) }
+            .keyboardShortcut("k")
+            .disabled(model.openAccount == nil || model.selectedTransactionRows.allSatisfy(\.reconciled))
     }
 }

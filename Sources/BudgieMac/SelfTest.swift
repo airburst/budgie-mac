@@ -96,6 +96,20 @@ enum SelfTest {
                 for transaction in wallet.transactions { context.delete(transaction) }
                 try? context.save()
             }
+            // S-009: marking as cleared changes the cleared balance, and Undo puts it back.
+            if let row = try? model.addTransaction(spend, to: wallet, undoManager: nil) {
+                let undoClear = UndoManager()
+                model.selectedTransactions = [row.persistentModelID]
+                check("the menu offers Mark as Cleared for an uncleared row", model.clearingTitle == "Mark as Cleared")
+                model.toggleCleared(model.selectedTransactionRows, undoManager: undoClear)
+                check("Mark as Cleared changes the cleared balance", wallet.clearedBalance == Decimal(string: "-3.40")!)
+                check("Undo is named Undo Mark as Cleared", undoClear.undoActionName == "Mark as Cleared")
+                undoClear.undo()
+                check("Undo Mark as Cleared puts it back", !row.cleared && wallet.clearedBalance == 0)
+                model.selectedTransactions = []
+                context.delete(row)
+                try? context.save()
+            }
             spend.withdrawal = ""
             check("an empty amount is refused", (try? model.addTransaction(spend, to: wallet, undoManager: nil)) == nil)
 

@@ -7,8 +7,7 @@ import SwiftUI
 /// selected transaction is reconciled; otherwise Undo is the safety net.
 extension AppModel {
     func deleteSelectedTransactions(undoManager: UndoManager?) {
-        let context = container.mainContext
-        let selected = selectedTransactions.compactMap { context.model(for: $0) as? Transaction }
+        let selected = selectedTransactionRows
         guard !selected.isEmpty else { return }
         let reconciled = selected.filter(\.reconciled)
         if reconciled.isEmpty {
@@ -65,6 +64,35 @@ extension AppModel {
         alert.beginSheetModal(for: window) { response in
             if response == .alertSecondButtonReturn { self.delete(transactions, undoManager: undoManager) }
         }
+    }
+}
+
+/// S-009: Mark as Cleared (⌘K), Space, or a click on the status icon.
+extension AppModel {
+    /// The selected rows that still exist. `model(for:)` would hand back a
+    /// deleted row, and reading it crashes, so only registered, live rows count.
+    var selectedTransactionRows: [Transaction] {
+        let context = container.mainContext
+        return selectedTransactions.compactMap { id -> Transaction? in
+            guard let row: Transaction = context.registeredModel(for: id), !row.isDeleted, row.modelContext != nil else { return nil }
+            return row
+        }
+    }
+
+    /// "Mark as Cleared" when any selected row is uncleared, else "Mark as Uncleared".
+    var clearingTitle: String {
+        Clearing.willClear(selectedTransactionRows) ? "Mark as Cleared" : "Mark as Uncleared"
+    }
+
+    func toggleCleared(_ transactions: [Transaction], undoManager: UndoManager?) {
+        let name = Clearing.willClear(transactions) ? "Mark as Cleared" : "Mark as Uncleared"
+        let changed = Clearing.toggle(transactions)
+        guard !changed.isEmpty else { return }
+        try? container.mainContext.save()
+        undoManager?.registerUndo(withTarget: self) { model in
+            model.toggleCleared(changed, undoManager: undoManager)
+        }
+        undoManager?.setActionName(name)
     }
 }
 

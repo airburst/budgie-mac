@@ -80,7 +80,9 @@ struct RegisterPage: View {
             .width(min: 90, ideal: 110)
             .alignment(.trailing)
             TableColumn("Status") { row in
-                StatusLabel(status: row.transaction.status)
+                StatusButton(transaction: row.transaction) {
+                    model.toggleCleared([row.transaction], undoManager: undoManager)
+                }
             }
             .width(min: 100, ideal: 110)
         }
@@ -102,6 +104,12 @@ struct RegisterPage: View {
         }
         // The Delete key and Edit > Delete.
         .onDeleteCommand { model.deleteSelectedTransactions(undoManager: undoManager) }
+        // Space marks the selected rows as cleared or uncleared.
+        .onKeyPress(.space) {
+            guard !model.selectedTransactions.isEmpty else { return .ignored }
+            model.toggleCleared(model.selectedTransactionRows, undoManager: undoManager)
+            return .handled
+        }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -141,16 +149,33 @@ struct CategoryPill: View {
     }
 }
 
-/// Icon plus word, so colour is never the only signal.
-struct StatusLabel: View {
-    let status: TransactionStatus
+/// Icon plus word, so colour is never the only signal. Clicking it marks the
+/// row as cleared or uncleared; a reconciled row shows a lock and stays put.
+struct StatusButton: View {
+    let transaction: Transaction
+    let toggle: () -> Void
 
     var body: some View {
-        Label(status.title, systemImage: symbol)
-            .foregroundStyle(status == .uncleared ? .secondary : .primary)
+        let status = transaction.status
+        Button(action: toggle) {
+            Label(status.title, systemImage: symbol(status))
+                .foregroundStyle(status == .uncleared ? .secondary : .primary)
+        }
+        .buttonStyle(.plain)
+        .disabled(status == .reconciled)
+        .help(help(status))
+        .accessibilityLabel("Cleared")
+        .accessibilityValue(status == .uncleared ? "off" : "on")
+        .accessibilityAddTraits(.isToggle)
     }
 
-    private var symbol: String {
+    private func help(_ status: TransactionStatus) -> String {
+        guard status == .reconciled else { return status == .cleared ? "Mark as uncleared (Space)" : "Mark as cleared (Space)" }
+        let day = transaction.account?.lastReconciled?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: TimeZone(identifier: "UTC")!))
+        return "Reconciled\(day.map { " on \($0)" } ?? ""). Reconciled transactions can't be marked as uncleared."
+    }
+
+    private func symbol(_ status: TransactionStatus) -> String {
         switch status {
         case .uncleared: "circle"
         case .cleared: "checkmark.circle"

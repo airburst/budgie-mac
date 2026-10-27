@@ -58,3 +58,50 @@ struct RegisterTests {
         #expect(household.path == "Household")
     }
 }
+
+/// S-009: marking as cleared.
+@MainActor
+@Suite("Clearing")
+struct ClearingTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+
+    @Test("The cleared balance changes by the row's amount")
+    func clearedBalance() {
+        let account = Account(name: "Bank", openingBalance: 10)
+        context.insert(account)
+        let shop = Transaction(account: account, payee: "Shop", amount: Decimal(string: "-70.20")!)
+        context.insert(shop)
+        #expect(account.clearedBalance == 10)
+        Clearing.toggle([shop])
+        #expect(shop.cleared && account.clearedBalance == Decimal(string: "-60.20")!)
+        Clearing.toggle([shop])
+        #expect(!shop.cleared && account.clearedBalance == 10)
+    }
+
+    @Test("A reconciled transaction cannot be uncleared")
+    func reconciledStays() {
+        let account = Account(name: "Bank")
+        context.insert(account)
+        let locked = Transaction(account: account, payee: "Locked", amount: 5)
+        locked.cleared = true
+        locked.reconciled = true
+        context.insert(locked)
+        #expect(Clearing.toggle([locked]).isEmpty)
+        #expect(locked.cleared && locked.status == .reconciled)
+    }
+
+    @Test("A mixed selection is all marked as cleared")
+    func mixed() {
+        let account = Account(name: "Bank")
+        context.insert(account)
+        let a = Transaction(account: account, payee: "a", amount: 1)
+        let b = Transaction(account: account, payee: "b", amount: 1)
+        b.cleared = true
+        [a, b].forEach(context.insert)
+        #expect(Clearing.willClear([a, b]))
+        #expect(Clearing.toggle([a, b]).map(\.payee) == ["a"])
+        #expect(a.cleared && b.cleared)
+        #expect(!Clearing.willClear([a, b]))
+    }
+}
