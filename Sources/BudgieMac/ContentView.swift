@@ -47,6 +47,8 @@ struct ContentView: View {
             ScheduledPage()
         case .page(.budget):
             BudgetPage()
+        case .page(.reports):
+            ReportsPage()
         case .page(let page):
             ContentUnavailableView(page.title, systemImage: page.symbol)
                 .navigationTitle(page.title)

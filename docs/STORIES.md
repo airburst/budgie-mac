@@ -506,7 +506,7 @@ Acceptance:
 - [snap] The donut has the total in the middle, a legend, and a values table with percentages.
 - [unit] Transfers and income are left out; categories roll up to their parent or not, matching Budgie (check `useReportsData.ts`).
 - [snap] An empty period shows "No spending in this period".
-Status: todo
+Status: done (charts use the Mac's currency; figures are per currency)
 
 ### S-045 Compare income and expenses by month
 As the user, I see grouped bars of income and expenses per month.
@@ -515,7 +515,7 @@ Depends: S-044
 Acceptance:
 - [unit] Monthly totals leave out transfers.
 - [snap] The values table lists each month's income, expenses and difference.
-Status: todo
+Status: done
 
 ### S-046 See my net worth over time
 As the user, I see a line or area chart of net worth by month.
@@ -524,7 +524,7 @@ Depends: S-044
 Acceptance:
 - [snap] An area chart scaled to the data, with a signed headline "-£573.48" (Fixes: tall bars and a "£-" sign).
 - [unit] Net worth per month = sum of account balances at the end of that month, converted only within one currency.
-Status: todo
+Status: done
 
 ### S-047 Filter reports by period and accounts
 As the user, I choose a date range preset and which accounts to include.
@@ -533,7 +533,7 @@ Depends: S-044
 Acceptance:
 - [snap] Presets: Last 30, 60 and 90 days, This month, Last month, This year; account multi-select with All.
 - [snap] The account picker shows no "No accounts found" text when accounts are listed (Fixes: a false empty message).
-Status: todo
+Status: done
 
 ### S-048 See summary figures
 As the user, I see Total Assets, Total Debt, Monthly Surplus and Saving Rate under the charts.
@@ -542,7 +542,7 @@ Depends: S-044
 Acceptance:
 - [unit] Totals are given per currency (Fixes: EUR summed as GBP).
 - [unit] Saving rate = surplus ÷ income for the latest complete month in range, shown as "—" when there's no income.
-Status: todo
+Status: done
 
 ## M7 Mac: menus, keyboard, settings, files
 
