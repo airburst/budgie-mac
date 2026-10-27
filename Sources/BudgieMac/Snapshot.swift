@@ -1,4 +1,6 @@
 import AppKit
+import BudgieMacKit
+import SwiftData
 import IOKit.pwr_mgt
 import SwiftUI
 
@@ -7,7 +9,8 @@ import SwiftUI
 /// writes <page>-light.png and <page>-dark.png for every sidebar page, and
 /// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
-/// APP_SNAPSHOT_PAGES=accounts,budget limits the pages. Add "settings" to include Settings.
+/// APP_SNAPSHOT_PAGES=accounts,budget limits the pages. Add "settings" to include Settings,
+/// "import" for the import confirmation and banner.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
@@ -38,6 +41,9 @@ enum Snapshot {
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
                 }
             }
+            if only == nil || only?.contains("import") == true {
+                await captureImport(model: model, dir: dir)
+            }
             if only == nil || only?.contains("settings") == true {
                 let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
                 openSettings()
@@ -59,12 +65,35 @@ enum Snapshot {
         }
     }
 
+    /// S-002: the Replace All Data confirmation and the banner after an import.
+    private static func captureImport(model: AppModel, dir: String) async {
+        let empty = #"{"manifest":{"formatVersion":1,"applicationVersion":"0.16.3","exportedAt":"2026-10-27T12:00:00.000Z"},"preferences":{},"accounts":[],"categories":[],"transactions":[],"accountReconciliations":[],"scheduledTransactions":[],"payees":[],"envelopes":[],"envelopeCategories":[],"budgetAllocations":[],"budgetTransfers":[]}"#
+        guard let package = try? JSONDecoder().decode(BudgieImport.Package.self, from: Data(empty.utf8)) else { return }
+        let context = model.container.mainContext
+        let accounts = (try? context.fetchCount(FetchDescriptor<Account>())) ?? 0
+        let transactions = (try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0
+        model.sidebar = .accounts
+        for mode in ["light", "dark"] {
+            NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+            model.importFlow.confirm(ImportFlow.Pending(fileName: "budgie-export-2026-10-27.json", package: package,
+                                                        accounts: accounts, transactions: transactions), in: model)
+            try? await Task.sleep(for: .seconds(1))
+            capture(to: "\(dir)/import-confirm-\(mode).png", withSheet: true)
+            for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet, returnCode: .alertFirstButtonReturn) } }
+            model.importFlow.banner = "Imported 7 accounts and 1,234 transactions from Budgie."
+            try? await Task.sleep(for: .seconds(0.8))
+            capture(to: "\(dir)/import-banner-\(mode).png")
+            model.importFlow.banner = nil
+        }
+    }
+
     /// Captures the real window with screencapture, so glass, sidebars, and
     /// materials look exactly as on screen. That needs Screen Recording
     /// permission for the app that started this one (your terminal, or Claude).
     /// Without it, falls back to drawing the view hierarchy, which leaves
     /// sidebars and glass blank.
-    private static func capture(to path: String, window: NSWindow? = nil) {
+    /// `withSheet` captures the window's attached sheet or alert (a window of its own) instead.
+    private static func capture(to path: String, window: NSWindow? = nil, withSheet: Bool = false) {
         // Another app can hide this one while snapshots run (computer use hides
         // apps it does not control). Hidden windows cannot be captured.
         if NSApp.isHidden { NSApp.unhideWithoutActivation() }
@@ -82,7 +111,11 @@ enum Snapshot {
         for _ in 1...3 {
             let shot = Process()
             shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-            shot.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+            if withSheet, let sheet = window.attachedSheet ?? NSApp.windows.first(where: { $0.isSheet && $0.isVisible }) {
+                shot.arguments = ["-x", "-o", "-l", String(sheet.windowNumber), path]
+            } else {
+                shot.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+            }
             try? shot.run()
             shot.waitUntilExit()
             if FileManager.default.fileExists(atPath: path) {

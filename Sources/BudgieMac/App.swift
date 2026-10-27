@@ -35,6 +35,11 @@ struct BudgieMacApp: App {
                 Button("New Account") { model.addAccount() }
                     .keyboardShortcut("n")
             }
+            CommandGroup(after: .newItem) {
+                Divider()
+                Button("Import Budgie Data…") { model.importFlow.chooseFile() }
+                    .keyboardShortcut("i", modifiers: [.command, .shift])
+            }
         }
 
         Settings {

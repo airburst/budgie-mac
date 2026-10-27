@@ -43,6 +43,7 @@ final class AppModel {
     let container: ModelContainer
     var sidebar: SidebarItem? = .accounts
     var selection: PersistentIdentifier?
+    let importFlow = ImportFlow()
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
     var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .general {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }

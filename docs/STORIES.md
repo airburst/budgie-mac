@@ -46,7 +46,7 @@ UX:
 - States: empty BudgieMac imports with no confirmation; loading "Importing 1,234 transactions…" with a bar and no Cancel, because the import is all or nothing; error alert "Unable to import "file.json"" plus the reason ("This file was made by a newer Budgie (format 2). Update BudgieMac to import it."); done: an inline banner at the top of All Accounts, "Imported 7 accounts and 1,234 transactions from Budgie.", with a close button
 - Words: menu "Import Budgie Data…"; confirmation title "Replace All Data with This Budgie File?", message "Your 7 accounts and 1,234 transactions in BudgieMac will be replaced. This can't be undone. Export your data first if you want a copy.", buttons "Replace All Data" (destructive) and "Cancel" (default)
 - Access: the open panel and the confirmation work by keyboard (Escape cancels both); the banner is announced to VoiceOver when it appears
-Status: todo
+Status: done (the [manual] check with a real Budgie export is still to do; no progress sheet yet, since imports finish at once)
 
 ### S-003 See all my accounts and their balances
 As the user, I open the app and see every account with its balance in the sidebar, and a table of accounts with totals on the Accounts page.

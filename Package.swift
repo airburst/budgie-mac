@@ -13,6 +13,6 @@ let package = Package(
             // App code runs on the main thread unless you say otherwise.
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
-        .testTarget(name: "BudgieMacKitTests", dependencies: ["BudgieMacKit"]),
+        .testTarget(name: "BudgieMacKitTests", dependencies: ["BudgieMacKit"], resources: [.copy("Fixtures")]),
     ]
 )

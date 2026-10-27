@@ -15,6 +15,7 @@ struct ContentView: View {
         } detail: {
             AccountDetail()
         }
+        .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)
             SelfTest.runIfRequested(model: model)
@@ -56,14 +57,21 @@ struct AccountList: View {
         .overlay {
             if visible.isEmpty {
                 if page == .accounts {
-                    ContentUnavailableView(
-                        "No Accounts",
-                        systemImage: page.symbol,
-                        description: Text("Press Command-N to add one.")
-                    )
+                    ContentUnavailableView {
+                        Label("No Accounts", systemImage: page.symbol)
+                    } description: {
+                        Text("Add an account to start tracking your money, or bring everything over from Budgie.")
+                    } actions: {
+                        Button("Import from Budgie…") { model.importFlow.chooseFile() }
+                    }
                 } else {
                     ContentUnavailableView(page.title, systemImage: page.symbol)
                 }
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if page == .accounts, let banner = model.importFlow.banner {
+                ImportBanner(text: banner) { model.importFlow.banner = nil }
             }
         }
         .navigationTitle(page.title)
