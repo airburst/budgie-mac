@@ -72,6 +72,7 @@ struct AccountMenuItems: View {
     var body: some View {
         Button("Open") { model.sidebar = .account(account.uuid) }
         Button("Edit Account…") { model.accountSheet = .edit(account.uuid) }
+        Button("Reconcile…") { model.reconcileSheet = ReconcileTarget(account: account.uuid) }
         Divider()
         Button("Close Account…", role: .destructive) { model.closeAccount(account, undoManager: undoManager) }
     }
@@ -88,6 +89,9 @@ struct AccountCommands: View {
         }
         .keyboardShortcut("e", modifiers: [.command, .option])
         .disabled(model.openAccount == nil)
+        Button("Reconcile…") { model.reconcileSheet = model.openAccount.map(ReconcileTarget.init) }
+            .keyboardShortcut("r", modifiers: [.command, .option])
+            .disabled(model.openAccount == nil)
         Button("Close Account…") {
             if let account = model.menuAccount { model.closeAccount(account, undoManager: undoManager) }
         }

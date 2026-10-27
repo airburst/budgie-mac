@@ -20,6 +20,9 @@ struct ContentView: View {
         .sheet(item: Bindable(model).transactionSheet) { mode in
             NavigationStack { TransactionSheet(mode: mode) }
         }
+        .sheet(item: Bindable(model).reconcileSheet) { target in
+            NavigationStack { ReconcileStartSheet(accountID: target.account) }
+        }
         .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)

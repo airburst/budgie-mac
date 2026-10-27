@@ -17,7 +17,11 @@ struct RegisterPage: View {
     }
 
     var body: some View {
-        if let account = accounts.first {
+        if let account = accounts.first, let reconcile = Reconcile(pendingOn: account) {
+            // A pending statement resumes the reconcile page (S-022).
+            ReconcileView(reconcile: reconcile)
+                .onAppear { model.prepareReconcile(account) }
+        } else if let account = accounts.first {
             register(account)
                 .navigationTitle(account.name)
                 .navigationSubtitle(subtitle(account))
@@ -160,9 +164,8 @@ struct RegisterPage: View {
                 }
             }
             .help(Register.filterSummary(hideReconciled: hideReconciled, hideCleared: hideCleared) ?? "Hide reconciled or cleared transactions")
-            Button("Reconcile…", systemImage: "checkmark.seal") {}
-                .disabled(true)
-                .help("Reconcile this account against a statement (coming with reconciliation)")
+            Button("Reconcile…", systemImage: "checkmark.seal") { model.reconcileSheet = model.openAccount.map(ReconcileTarget.init) }
+                .help("Reconcile this account against a statement")
             Button("Forecast", systemImage: "chart.line.uptrend.xyaxis") {}
                 .disabled(true)
                 .help("Forecast this account's balance (coming with M3)")

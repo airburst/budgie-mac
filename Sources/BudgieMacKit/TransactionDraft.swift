@@ -57,6 +57,14 @@ public struct TransactionDraft {
         }
     }
 
+    /// The same draft with a different withdrawal, for tests and scripts.
+    public func with(withdrawal: String) -> TransactionDraft {
+        var draft = self
+        draft.withdrawal = withdrawal
+        draft.deposit = ""
+        return draft
+    }
+
     /// "That's more than a year from today." A note only.
     public var isFarFromToday: Bool {
         abs(date.timeIntervalSince(Day.today)) > 366 * 86_400

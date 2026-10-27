@@ -281,7 +281,7 @@ Depends: S-009
 Acceptance:
 - [snap] The sheet shows the last reconcile's date and balance, and Next is turned off until a balance is entered.
 - [unit] Next saves the pending statement on the account.
-Status: todo
+Status: done
 
 ### S-022 Match transactions to the statement and finish
 As the user, I tick transactions until the difference is zero, then press Finish.
@@ -294,7 +294,7 @@ Acceptance:
 - [self] Return finishes when balanced; Escape leaves and keeps the pending statement.
 - [unit] Reopening an account with a pending statement resumes the reconcile page.
 - [unit] "Cleared balance" uses the same definition here and on the Accounts page (Fixes: two different cleared balances).
-Status: todo
+Status: done (Escape goes to All Accounts and keeps the statement; Stop Reconciling forgets it)
 
 ### S-023 Balance a reconcile with an adjustment
 As the user, I press Auto Balance and add an adjustment transaction for the difference.
@@ -303,7 +303,7 @@ Depends: S-022
 Acceptance:
 - [snap] The transaction sheet opens prefilled with the difference and a "Reconciliation adjustment" payee.
 - [unit] After saving, the difference is zero.
-Status: todo
+Status: done
 
 ### S-024 Fix a transaction while reconciling
 As the user, I add or edit a transaction from the reconcile page without leaving it.
@@ -312,7 +312,7 @@ Depends: S-022
 Acceptance:
 - [self] Command-N on the reconcile page adds a transaction, and the new row arrives ticked.
 - [unit] Editing an amount updates the Difference.
-Status: todo
+Status: done
 
 ## M4 Time: scheduled payments and forecast
 

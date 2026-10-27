@@ -23,3 +23,9 @@ Symptom: deleting a category (or closing an account) set the flag, but after `co
 Cause: the attribute was called `deleted`, which is also Core Data's own `NSManagedObject.deleted` key under SwiftData.
 Fix: renamed to `softDeleted` with `@Attribute(originalName: "deleted")` so existing stores migrate; a unit test reads it back after a save.
 Rule: never name a SwiftData attribute after an NSManagedObject property (`deleted`, `inserted`, `updated`, `faulted`, `entity`, `objectID`, `description`).
+
+## A row added while reconciling didn't stay ticked (S-024)
+Symptom: the self-test found the new row missing from the ticked set.
+Cause: its `persistentModelID` was stored before `context.save()`; saving replaces a new model's temporary id with a permanent one.
+Fix: store ids of new models only after saving.
+Rule: never keep a new model's `persistentModelID` from before its first save.

@@ -90,6 +90,14 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
+    /// Reconcile… sheet for an account (S-021).
+    var reconcileSheet: ReconcileTarget?
+    /// The reconcile page's ticked rows, for the account in `reconcileFor`.
+    var reconcileTicked = Set<PersistentIdentifier>()
+    var reconcileFor: UUID?
+    /// The ticks came from an exact match to the statement.
+    var reconcileAutoMatched = false
+
     /// The Add or Edit Payee sheet, when open (S-019).
     var payeeSheet: PayeeSheetMode?
 

@@ -140,6 +140,32 @@ enum SelfTest {
                 check("Undo Delete Category brings it back", !hobbies.softDeleted)
             }
 
+            // M3: reconcile the self-test wallet against a statement of -10.
+            if let shop = try? model.addTransaction(spend.with(withdrawal: "10"), to: wallet, undoManager: nil) {
+                model.startReconcile(wallet, date: Day.today, balance: -10)
+                let reconcile = Reconcile(pendingOn: wallet)
+                check("Next saves the pending statement", reconcile?.statementBalance == -10)
+                check("the matching row starts ticked", model.reconcileTicked.contains(shop.persistentModelID) && model.reconcileAutoMatched)
+                check("Finish is allowed when the difference is zero", reconcile?.isBalanced(ticked: model.reconcileTicked) == true)
+                // S-024: a row added while reconciling arrives ticked; editing an amount moves the difference.
+                if let extra = try? model.addTransaction(spend.with(withdrawal: "5"), to: wallet, undoManager: nil) {
+                    check("a transaction added while reconciling arrives ticked", model.reconcileTicked.contains(extra.persistentModelID))
+                    check("the new row unbalances the statement", reconcile?.difference(ticked: model.reconcileTicked) == 5)
+                    var change = TransactionDraft(extra)
+                    change.withdrawal = "2"
+                    try? model.edit(extra, with: change, undoManager: nil)
+                    check("editing an amount updates the difference", reconcile?.difference(ticked: model.reconcileTicked) == 2)
+                    // S-023: an adjustment for the difference balances it.
+                    var adjustment = TransactionDraft()
+                    adjustment.payee = "Reconciliation adjustment"
+                    adjustment.deposit = "2"
+                    _ = try? model.addTransaction(adjustment, to: wallet, undoManager: nil)
+                    check("an adjustment for the difference balances it", reconcile?.difference(ticked: model.reconcileTicked) == 0)
+                }
+                if let reconcile { model.finishReconcile(reconcile, undoManager: nil) }
+                check("Finish reconciles and clears the pending statement", wallet.pendingReconcileDate == nil && wallet.lastReconciled != nil)
+            }
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

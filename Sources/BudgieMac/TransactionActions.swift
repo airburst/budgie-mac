@@ -23,7 +23,12 @@ extension AppModel {
     func addTransaction(_ draft: TransactionDraft, to account: Account, undoManager: UndoManager?) throws(TransactionDraft.Problem) -> Transaction {
         let context = container.mainContext
         let transaction = try draft.add(to: account, in: context)
+        // S-024: a row added while reconciling arrives ticked.
+        let tick = reconcileFor == account.uuid && transaction.date <= (account.pendingReconcileDate ?? .distantPast)
+        if tick { transaction.cleared = true }
         try? context.save()
+        // After the save: saving swaps a new row's temporary id for its permanent one.
+        if tick { reconcileTicked.insert(transaction.persistentModelID) }
         selectedTransactions = [transaction.persistentModelID]
         undoManager?.registerUndo(withTarget: self) { model in
             model.selectedTransactions.remove(transaction.persistentModelID)

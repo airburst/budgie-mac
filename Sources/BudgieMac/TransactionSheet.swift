@@ -6,6 +6,8 @@ import SwiftUI
 enum TransactionSheetMode: Identifiable, Hashable {
     case add(account: UUID)
     case edit(PersistentIdentifier)
+    /// S-023: Auto Balance, prefilled with the difference.
+    case adjust(account: UUID, amount: Decimal)
 
     var id: Self { self }
 }
@@ -131,13 +133,22 @@ struct TransactionSheet: View {
             guard !loaded else { return }
             loaded = true
             if let editing { draft = TransactionDraft(editing) }
+            if case .adjust(_, let amount) = mode {
+                draft.payee = "Reconciliation adjustment"
+                let text = abs(amount).formatted(.number.precision(.fractionLength(2)).grouping(.never))
+                if amount < 0 { draft.withdrawal = text } else { draft.deposit = text }
+                draft.cleared = true
+            }
             categoryText = draft.category?.path ?? ""
             payeeFocused = true
         }
     }
 
     private var addingTo: UUID? {
-        if case .add(let uuid) = mode { uuid } else { nil }
+        switch mode {
+        case .add(let uuid), .adjust(let uuid, _): uuid
+        case .edit: nil
+        }
     }
 
     private func save() {
@@ -150,7 +161,7 @@ struct TransactionSheet: View {
         }
         do {
             switch mode {
-            case .add(let uuid):
+            case .add(let uuid), .adjust(let uuid, _):
                 guard let account = try context.fetch(FetchDescriptor<Account>(predicate: #Predicate { $0.uuid == uuid })).first else { return }
                 try model.addTransaction(draft, to: account, undoManager: undoManager)
             case .edit:

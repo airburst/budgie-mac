@@ -101,6 +101,25 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("reconcile") == true {
+                // M3: the Reconcile… sheet, then the reconcile page with a pending statement.
+                let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
+                if let current = open.first(where: { $0.name == "Everyday Current" }) {
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        model.sidebar = .account(current.uuid)
+                        model.reconcileSheet = ReconcileTarget(account: current.uuid)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/reconcile-start-\(mode).png", withSheet: true)
+                        model.reconcileSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                        model.startReconcile(current, date: Day.today, balance: Decimal(string: "4750")!)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/reconcile-\(mode).png")
+                        model.stopReconcile(current)
+                    }
+                }
+            }
             if only == nil || only?.contains("payees") == true {
                 // S-019: Edit Payee for Corner Grocer.
                 let payees = (try? model.container.mainContext.fetch(FetchDescriptor<Payee>())) ?? []
