@@ -36,7 +36,7 @@ struct TransactionSheet: View {
             Section {
                 DatePicker("Date", selection: $draft.date, displayedComponents: .date)
                     // Days are stored at midnight UTC; show them in UTC so they never shift.
-                    .environment(\.timeZone, TimeZone(identifier: "UTC")!)
+                    .environment(\.timeZone, Day.calendar.timeZone)
                 if draft.isFarFromToday {
                     Label("That's more than a year from today.", systemImage: "calendar.badge.exclamationmark")
                         .font(.callout)
@@ -123,7 +123,7 @@ private struct EditWarnings: View {
         if reconciledOn != nil || partner != nil {
             Section {
                 if let reconciledOn {
-                    Label("This transaction is reconciled. Changing the amount or account will unbalance the reconciliation of \(reconciledOn.formatted(Self.day)).",
+                    Label("This transaction is reconciled. Changing the amount or account will unbalance the reconciliation of \(Day.formatted(reconciledOn, .abbreviated)).",
                           systemImage: "lock")
                 }
                 if let name = partner?.account?.name {
@@ -134,6 +134,4 @@ private struct EditWarnings: View {
             .foregroundStyle(.secondary)
         }
     }
-
-    private static let day = Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: TimeZone(identifier: "UTC")!)
 }

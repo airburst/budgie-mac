@@ -183,3 +183,15 @@ struct SchemaTests {
         #expect(Day.string(try #require(Day.parse(text + "T12:34:56Z"))) == text)
     }
 }
+
+@Test("Days show as the same day in any time zone")
+func dayFormatting() {
+    let day = Day.parse("2026-09-22")!
+    let uk = Locale(identifier: "en_GB")
+    #expect(Day.formatted(day, locale: uk) == "22/09/2026")
+    #expect(Day.formatted(day, .abbreviated, locale: uk) == "22 Sept 2026" || Day.formatted(day, .abbreviated, locale: uk) == "22 Sep 2026")
+    // The bug this prevents: local-time formatting west of UTC gives the 21st.
+    var pacific = Date.FormatStyle(date: .numeric, time: .omitted, locale: uk)
+    pacific.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+    #expect(day.formatted(pacific) == "21/09/2026")
+}

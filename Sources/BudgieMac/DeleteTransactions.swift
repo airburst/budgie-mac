@@ -49,7 +49,7 @@ extension AppModel {
         alert.alertStyle = .warning
         if transactions.count == 1, let one = transactions.first {
             let currency = one.account?.currency ?? "GBP"
-            let day = one.date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: TimeZone(identifier: "UTC")!))
+            let day = Day.formatted(one.date, .abbreviated)
             alert.messageText = "Delete the Reconciled Transaction “\(one.payee)”, \(day), \(Money.string(one.amount, currency: currency))?"
         } else {
             alert.messageText = "Delete \(transactions.count) Transactions, Including \(reconciled.count) Reconciled?"

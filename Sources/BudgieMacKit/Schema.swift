@@ -331,3 +331,11 @@ public extension Category {
         FetchDescriptor(predicate: #Predicate { !$0.deleted }, sortBy: [SortDescriptor(\.name)])
     }
 }
+
+public extension Day {
+    /// Shows a stored day in the user's locale. Always use this: formatting a
+    /// day in the local time zone shows the day before west of Greenwich.
+    static func formatted(_ date: Date, _ style: Date.FormatStyle.DateStyle = .numeric, locale: Locale = .current) -> String {
+        date.formatted(Date.FormatStyle(date: style, time: .omitted, locale: locale, timeZone: calendar.timeZone))
+    }
+}

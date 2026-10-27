@@ -52,7 +52,7 @@ struct AccountsPage: View {
             }
             .alignment(.trailing)
             TableColumn("Last Reconciled") { account in
-                Text(account.lastReconciled.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Never")
+                Text(account.lastReconciled.map { Day.formatted($0, .abbreviated) } ?? "Never")
                     .foregroundStyle(account.lastReconciled == nil ? .secondary : .primary)
             }
             TableColumn("Remaining Credit") { account in

@@ -52,7 +52,7 @@ struct RegisterPage: View {
         @Bindable var model = model
         return Table(rows, selection: $model.selectedTransactions) {
             TableColumn("Date") { row in
-                Text(row.transaction.date.formatted(Self.dayFormat))
+                Text(Day.formatted(row.transaction.date))
                     .monospacedDigit()
             }
             .width(min: 80, ideal: 96)
@@ -130,8 +130,6 @@ struct RegisterPage: View {
         }
     }
 
-    /// "10/08/2026" in the user's locale.
-    static let dayFormat = Date.FormatStyle(date: .numeric, time: .omitted, timeZone: TimeZone(identifier: "UTC")!)
 }
 
 /// The category as a pill, with its full path as a tooltip.
@@ -171,7 +169,7 @@ struct StatusButton: View {
 
     private func help(_ status: TransactionStatus) -> String {
         guard status == .reconciled else { return status == .cleared ? "Mark as uncleared (Space)" : "Mark as cleared (Space)" }
-        let day = transaction.account?.lastReconciled?.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: TimeZone(identifier: "UTC")!))
+        let day = transaction.account?.lastReconciled.map { Day.formatted($0, .abbreviated) }
         return "Reconciled\(day.map { " on \($0)" } ?? ""). Reconciled transactions can't be marked as uncleared."
     }
 
