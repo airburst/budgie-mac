@@ -96,6 +96,9 @@ enum Palette {
     static var accent: Color { ThemeStore.shared.theme.accent }
     static var accentText: Color { ThemeStore.shared.theme.accentText }
     static var onAccent: Color { ThemeStore.shared.theme.onAccent }
+    /// Kept from Budgie: green for money in, red for money out. Always paired with a sign.
+    static let moneyIn = Color.green
+    static let moneyOut = Color.red
 }
 
 extension View {

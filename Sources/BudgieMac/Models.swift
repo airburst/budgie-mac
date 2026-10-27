@@ -2,7 +2,6 @@ import Foundation
 import SwiftData
 import BudgieMacKit
 
-
 // SwiftUI and ObjectiveC have their own `Transaction` and `Category`; in this
 // module the names mean the data model.
 typealias Transaction = BudgieMacKit.Transaction
@@ -37,12 +36,39 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
+/// What the sidebar has selected: a page, or one account (its register).
+enum SidebarSelection: Hashable {
+    case page(SidebarItem)
+    case account(UUID)
+}
+
+extension AccountType {
+    var title: String {
+        switch self {
+        case .bank: "Bank"
+        case .creditCard: "Credit Card"
+        case .loan: "Loan"
+        case .investment: "Investment"
+        case .cash: "Cash"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .bank: "building.columns"
+        case .creditCard: "creditcard"
+        case .loan: "percent"
+        case .investment: "chart.line.uptrend.xyaxis"
+        case .cash: "banknote"
+        }
+    }
+}
+
 /// App-wide state that menus, toolbars, and views share.
 @Observable
 final class AppModel {
     let container: ModelContainer
-    var sidebar: SidebarItem? = .accounts
-    var selection: PersistentIdentifier?
+    var sidebar: SidebarSelection? = .page(.accounts)
     let importFlow = ImportFlow()
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
     var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .general {
@@ -56,7 +82,6 @@ final class AppModel {
     func addAccount(name: String = "") {
         let account = Account(name: AccountName.clean(name))
         container.mainContext.insert(account)
-        sidebar = .accounts
-        selection = account.id
+        sidebar = .account(account.uuid)
     }
 }

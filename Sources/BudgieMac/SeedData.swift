@@ -1,11 +1,12 @@
+import BudgieMacKit
 import Foundation
 import SwiftData
-import BudgieMacKit
 
 /// Sample data for snapshots: APP_SEED=1 with APP_STORE in /tmp fills an empty
-/// store with realistic accounts (short and long names, open and closed).
-/// Replace these with your app's own types. Seed only what a person can
-/// create in the app, or the snapshots show features no one can use.
+/// store with realistic accounts and transactions (short and long names,
+/// positive and negative balances, two currencies, one closed account).
+/// Seed only what a person can create in the app, or the snapshots show
+/// features no one can use.
 @MainActor
 enum SeedData {
     static func insertIfRequested(into model: AppModel) {
@@ -16,22 +17,65 @@ enum SeedData {
         }
         let context = model.container.mainContext
         guard ((try? context.fetchCount(FetchDescriptor<Account>())) ?? 0) == 0 else { return }
-        let samples: [(String, Bool)] = [
-            ("Current Account", false),
-            ("Joint Account", false),
-            ("Easy Access Savings", false),
-            ("Credit Card", false),
-            ("Cash", false),
-            ("Stocks and Shares ISA held with the investment platform since 2019", false),
-            ("Car Loan", true),
-            ("Old Current Account", true),
-        ]
-        for (index, sample) in samples.enumerated() {
-            let account = Account(name: sample.0)
-            account.deleted = sample.1
-            account.createdAt = Date.now.addingTimeInterval(Double(-index) * 3_600)
-            context.insert(account)
-        }
+        insert(into: context)
         try? context.save()
+    }
+
+    private static func money(_ text: String) -> Decimal { Decimal(string: text)! }
+
+    /// Days before 27 Oct 2026, the "today" of the reference screenshots.
+    private static func day(_ daysAgo: Int) -> Date {
+        Day.calendar.date(byAdding: .day, value: -daysAgo, to: Day.parse("2026-10-27")!)!
+    }
+
+    static func insert(into context: ModelContext) {
+        let household = Category(name: "Household")
+        let groceries = Category(name: "Groceries", parent: household)
+        let utilities = Category(name: "Utilities", parent: household)
+        let salary = Category(name: "Salary", kind: .income)
+        let eatingOut = Category(name: "Eating Out")
+        [household, groceries, utilities, salary, eatingOut].forEach(context.insert)
+
+        let current = Account(name: "Everyday Current", openingBalance: money("1200"))
+        current.number = "12344321"
+        let card = Account(name: "Credit Card", type: .creditCard, openingBalance: money("-250.75"))
+        card.number = "4929123456785678"
+        card.creditLimit = 3_000
+        let saver = Account(name: "Rainy Day Saver", openingBalance: money("5000"))
+        saver.number = "87651234"
+        let loan = Account(name: "Car Loan", type: .loan, openingBalance: money("-8400"))
+        let isa = Account(name: "Stocks and Shares ISA with the investment platform since 2019", type: .investment, openingBalance: money("12850.40"))
+        let wallet = Account(name: "Wallet", type: .cash, openingBalance: money("60"))
+        let euro = Account(name: "Euro Account", openingBalance: money("420"), currency: "EUR")
+        let closed = Account(name: "Old Current Account", openingBalance: money("12"))
+        closed.deleted = true
+        [current, card, saver, loan, isa, wallet, euro, closed].forEach(context.insert)
+
+        // (account, days ago, payee, amount, category, cleared, reconciled)
+        let rows: [(Account, Int, String, String, Category?, Bool, Bool)] = [
+            (current, 70, "Employer Ltd", "2345.67", salary, true, true),
+            (current, 66, "Corner Grocer", "-70.20", groceries, true, true),
+            (current, 60, "Power Co", "-84.10", utilities, true, true),
+            (current, 40, "Employer Ltd", "2345.67", salary, true, false),
+            (current, 38, "Rent", "-1150", household, true, false),
+            (current, 30, "Corner Grocer", "-64.35", groceries, true, false),
+            (current, 12, "The Noodle Bar", "-23.80", eatingOut, false, false),
+            (current, 9, "Employer Ltd", "2345.67", salary, false, false),
+            (current, 7, "Rent", "-1150", household, false, false),
+            (current, 2, "Corner Grocer", "-81.02", groceries, false, false),
+            (card, 20, "Bookshop", "-18.99", nil, true, false),
+            (card, 10, "The Noodle Bar", "-41.50", eatingOut, false, false),
+            (card, 5, "Payment Received", "250.75", nil, true, false),
+            (loan, 30, "Loan Payment", "350", nil, true, false),
+            (wallet, 3, "Coffee", "-3.40", eatingOut, false, false),
+            (euro, 15, "Café de Paris", "-28.60", eatingOut, true, false),
+        ]
+        for (account, daysAgo, payee, amount, category, cleared, reconciled) in rows {
+            let transaction = Transaction(account: account, date: day(daysAgo), payee: payee, amount: money(amount), category: category)
+            transaction.cleared = cleared
+            transaction.reconciled = reconciled
+            context.insert(transaction)
+        }
+        context.insert(AccountReconciliation(account: current, date: day(35), balance: money("3391.37")))
     }
 }

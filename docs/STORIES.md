@@ -64,7 +64,7 @@ UX:
 - Words: page title "All Accounts"; card "Total Balance" with the note "Sum of account balances, not cash you can spend" (one line per currency); columns "Account", "Balance", "Cleared Balance", "Last Reconciled", "Remaining Credit"; "Never" when not reconciled
 - Context menu on an account (sidebar and table): "Open", "Edit Account…", "Reconcile…", "Close Account…"
 - Access: negative amounts show a minus sign as well as red; VoiceOver reads a sidebar row as "Everyday Current, balance £4,778.58"; ↑/↓ move through the sidebar and Return opens
-Status: todo
+Status: done (context menu has Open; Edit Account…, Reconcile… and Close Account… arrive with S-010 and the reconcile story)
 
 ### S-004 Add an account
 As the user, I click Add Account, fill in name, type, number, opening balance and currency, and the account appears in the sidebar.

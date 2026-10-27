@@ -75,8 +75,7 @@ final class ImportFlow {
     func replace(with request: Pending, in model: AppModel) {
         do {
             let summary = try BudgieImport.replaceAll(in: model.container.mainContext, with: request.package)
-            model.selection = nil
-            model.sidebar = .accounts
+            model.sidebar = .page(.accounts)
             let text = "Imported \(Self.count(summary.accounts, "account")) and \(Self.count(summary.transactions, "transaction")) from Budgie."
             banner = text
             AccessibilityNotification.Announcement(text).post()

@@ -30,6 +30,11 @@ struct BudgieMacApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             SidebarCommands()
+            CommandGroup(before: .sidebar) {
+                Button("All Accounts") { model.sidebar = .page(.accounts) }
+                    .keyboardShortcut("1")
+                Divider()
+            }
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {
                 Button("New Account") { model.addAccount() }

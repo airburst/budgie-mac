@@ -8,12 +8,10 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            sidebar
-        } content: {
-            AccountList(page: model.sidebar ?? .accounts)
-                .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+            Sidebar()
+                .navigationSplitViewColumnWidth(min: 220, ideal: 280)
         } detail: {
-            AccountDetail()
+            detail
         }
         .modifier(ImportFlowModifier())
         .task {
@@ -23,86 +21,33 @@ struct ContentView: View {
         }
     }
 
-    private var sidebar: some View {
-        @Bindable var model = model
-        return List(SidebarItem.allCases, selection: $model.sidebar) { page in
-            Label(page.title, systemImage: page.symbol)
-                .tag(page)
-        }
-        .navigationSplitViewColumnWidth(min: 180, ideal: 212)
-    }
-}
-
-struct AccountList: View {
-    @Environment(AppModel.self) private var model
-    @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.createdAt, order: .reverse)
-    private var accounts: [Account]
-    let page: SidebarItem
-
-    /// Only All Accounts lists anything yet; the other pages come with their stories.
-    private var visible: [Account] {
-        page == .accounts ? accounts : []
-    }
-
-    var body: some View {
-        @Bindable var model = model
-        List(visible, selection: $model.selection) { account in
-            Label(account.name, systemImage: "building.columns")
-                .tag(account.id)
-                .contextMenu {
-                    // Accounts are soft deleted, so their history stays.
-                    Button("Delete", role: .destructive) { account.deleted = true }
-                }
-        }
-        .overlay {
-            if visible.isEmpty {
-                if page == .accounts {
-                    ContentUnavailableView {
-                        Label("No Accounts", systemImage: page.symbol)
-                    } description: {
-                        Text("Add an account to start tracking your money, or bring everything over from Budgie.")
-                    } actions: {
-                        Button("Import from Budgie…") { model.importFlow.chooseFile() }
-                    }
-                } else {
-                    ContentUnavailableView(page.title, systemImage: page.symbol)
-                }
-            }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if page == .accounts, let banner = model.importFlow.banner {
-                ImportBanner(text: banner) { model.importFlow.banner = nil }
-            }
-        }
-        .navigationTitle(page.title)
-        .toolbar {
-            ToolbarItem {
-                Button("New Account", systemImage: "plus") { model.addAccount() }
-                    .help("Add an account (Command-N)")
-            }
+    @ViewBuilder private var detail: some View {
+        switch model.sidebar ?? .page(.accounts) {
+        case .page(.accounts):
+            AccountsPage()
+        case .page(let page):
+            ContentUnavailableView(page.title, systemImage: page.symbol)
+                .navigationTitle(page.title)
+        case .account(let uuid):
+            AccountDetail(uuid: uuid)
         }
     }
 }
 
-struct AccountDetail: View {
-    @Environment(AppModel.self) private var model
+/// An account's page. The register comes with S-005.
+private struct AccountDetail: View {
     @Query private var accounts: [Account]
 
+    init(uuid: UUID) {
+        _accounts = Query(filter: #Predicate<Account> { $0.uuid == uuid })
+    }
+
     var body: some View {
-        if let account = accounts.first(where: { $0.id == model.selection }) {
-            @Bindable var account = account
-            Form {
-                TextField("Name", text: $account.name)
-                TextField("Notes", text: Binding(
-                    get: { account.notes ?? "" },
-                    set: { account.notes = $0.isEmpty ? nil : $0 }
-                ), axis: .vertical)
-                    .lineLimit(4...)
-            }
-            .formStyle(.grouped)
+        if let account = accounts.first {
+            ContentUnavailableView(account.name, systemImage: account.type.symbol)
+                .navigationTitle(account.name)
         } else {
-            ContentUnavailableView("No Selection", systemImage: "sidebar.right")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ContentUnavailableView("No Account", systemImage: "building.columns")
         }
     }
 }

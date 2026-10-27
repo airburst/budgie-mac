@@ -31,9 +31,10 @@ enum SelfTest {
             let before = accounts().count
             model.addAccount()
             check("New Account adds one account", accounts().count == before + 1)
-            check("the new account is selected", model.selection != nil)
+            let added = accounts().first { model.sidebar == .account($0.uuid) }
+            check("the new account is selected", added != nil)
 
-            if let account = accounts().first(where: { $0.id == model.selection }) {
+            if let account = added {
                 // S-001: a transaction survives a reload of the store.
                 let transaction = Transaction(account: account, payee: "Corner Grocer", amount: Decimal(string: "-70.20")!)
                 context.insert(transaction)

@@ -36,7 +36,7 @@ enum Snapshot {
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
                 for page in SidebarItem.allCases where only?.contains(page.rawValue) ?? true {
-                    model.sidebar = page
+                    model.sidebar = .page(page)
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
                 }
@@ -72,7 +72,7 @@ enum Snapshot {
         let context = model.container.mainContext
         let accounts = (try? context.fetchCount(FetchDescriptor<Account>())) ?? 0
         let transactions = (try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0
-        model.sidebar = .accounts
+        model.sidebar = .page(.accounts)
         for mode in ["light", "dark"] {
             NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
             model.importFlow.confirm(ImportFlow.Pending(fileName: "budgie-export-2026-10-27.json", package: package,
