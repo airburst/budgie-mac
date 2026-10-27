@@ -216,8 +216,9 @@ enum SelfTest {
 
             // S-051: search narrows the register; clearing it shows everything again.
             let walletRows = Register.rows(Register.fetch(wallet, in: context), openingBalance: wallet.openingBalance)
-            let searched = walletRows.filter { Register.matches($0.transaction, "café") }
-            check("search narrows the register", !searched.isEmpty && searched.count < walletRows.count || walletRows.count == searched.count)
+            check("search narrows the register", !walletRows.isEmpty
+                  && walletRows.filter { Register.matches($0.transaction, "no such payee") }.isEmpty
+                  && walletRows.contains { Register.matches($0.transaction, $0.transaction.payee) })
             check("an empty search shows every row", walletRows.filter { Register.matches($0.transaction, "") }.count == walletRows.count)
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.
