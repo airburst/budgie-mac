@@ -26,21 +26,21 @@ enum SelfTest {
         Task {
             try? await Task.sleep(for: .seconds(0.5))
             let context = model.container.mainContext
-            func items() -> [Item] { (try? context.fetch(FetchDescriptor<Item>())) ?? [] }
+            func accounts() -> [Account] { (try? context.fetch(FetchDescriptor<Account>())) ?? [] }
 
-            let before = items().count
-            model.addItem()
-            check("New Item adds one item", items().count == before + 1)
-            check("the new item is selected", model.selection != nil)
+            let before = accounts().count
+            model.addAccount()
+            check("New Account adds one account", accounts().count == before + 1)
+            check("the new account is selected", model.selection != nil)
 
-            if let item = items().first(where: { $0.id == model.selection }) {
-                item.isStarred.toggle()
-                check("starring an item marks it starred", item.isStarred)
-                context.delete(item)
+            if let account = accounts().first(where: { $0.id == model.selection }) {
+                account.isClosed.toggle()
+                check("closing an account marks it closed", account.isClosed)
+                context.delete(account)
                 try? context.save()
-                check("deleting the item removes it", items().count == before)
+                check("deleting the account removes it", accounts().count == before)
             }
-            check("titles are cleaned", ItemTitle.clean("  Buy   milk ") == "Buy milk")
+            check("account names are cleaned", AccountName.clean("  Joint   Account ") == "Joint Account")
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)

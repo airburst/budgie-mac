@@ -7,6 +7,10 @@
 #        ./build.sh --debug    debug build, install
 #        ./build.sh --open     install, then quit the running copy and open the new one
 set -euo pipefail
+# The SwiftUI and SwiftData macro plugins ship with Xcode, not the Command Line Tools.
+if [[ -z "${DEVELOPER_DIR:-}" && "$(xcode-select -p)" == */CommandLineTools && -d /Applications/Xcode.app ]]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+fi
 here=${0:A:h}
 name="BudgieMac"
 scratch="$HOME/Library/Developer/$name/build"

@@ -6,7 +6,7 @@ import SwiftUI
 //   BudgieMac                      the app
 //   APP_STORE=<file> BudgieMac     use another database (tests, experiments)
 //   APP_SNAPSHOT=<dir> BudgieMac   save a PNG of every sidebar page and Settings tab in light and dark mode, then quit
-//   APP_SEED=1 BudgieMac           fill an empty /tmp store with sample items (tools/snap.sh)
+//   APP_SEED=1 BudgieMac           fill an empty /tmp store with sample accounts (tools/snap.sh)
 //   BudgieMac --selftest           run the self-test on a /tmp store and quit with 0 or 1 (tools/selftest.sh)
 //   APP_ACCENT=<id> BudgieMac      run with another accent from Theme.all (UI/Theme.swift)
 //   APP_GRID=1 BudgieMac           draw the 8 pt grid and the layout probes over the window
@@ -31,7 +31,7 @@ struct BudgieMacApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {
-                Button("New Item") { model.addItem() }
+                Button("New Account") { model.addAccount() }
                     .keyboardShortcut("n")
             }
         }
@@ -78,7 +78,7 @@ enum Store {
 
     static func makeContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: Item.self, configurations: ModelConfiguration(url: url))
+            return try ModelContainer(for: Account.self, configurations: ModelConfiguration(url: url))
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }

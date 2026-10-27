@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// Sample data for snapshots: APP_SEED=1 with APP_STORE in /tmp fills an empty
-/// store with realistic items (short and long titles, starred and not).
+/// store with realistic accounts (short and long names, open and closed).
 /// Replace these with your app's own types. Seed only what a person can
 /// create in the app, or the snapshots show features no one can use.
 @MainActor
@@ -14,22 +14,22 @@ enum SeedData {
             return
         }
         let context = model.container.mainContext
-        guard ((try? context.fetchCount(FetchDescriptor<Item>())) ?? 0) == 0 else { return }
+        guard ((try? context.fetchCount(FetchDescriptor<Account>())) ?? 0) == 0 else { return }
         let samples: [(String, Bool)] = [
-            ("Book the dentist", false),
-            ("Read the article about local-first software and write down three ideas worth trying", true),
-            ("Renew passport", false),
-            ("Plan the weekend trip", true),
-            ("Call Anna", false),
-            ("Back up the photo library to the external drive before the trip", false),
-            ("Groceries", false),
-            ("Draft the quarterly review", true),
+            ("Current Account", false),
+            ("Joint Account", false),
+            ("Easy Access Savings", false),
+            ("Credit Card", false),
+            ("Cash", false),
+            ("Stocks and Shares ISA held with the investment platform since 2019", false),
+            ("Car Loan", true),
+            ("Old Current Account", true),
         ]
         for (index, sample) in samples.enumerated() {
-            let item = Item(title: sample.0)
-            item.isStarred = sample.1
-            item.createdAt = Date.now.addingTimeInterval(Double(-index) * 3_600)
-            context.insert(item)
+            let account = Account(name: sample.0)
+            account.isClosed = sample.1
+            account.createdAt = Date.now.addingTimeInterval(Double(-index) * 3_600)
+            context.insert(account)
         }
         try? context.save()
     }

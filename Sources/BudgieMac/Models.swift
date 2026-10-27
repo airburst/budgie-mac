@@ -3,36 +3,44 @@ import SwiftData
 import BudgieMacKit
 
 @Model
-final class Item {
-    var title: String
+final class Account {
+    var name: String
     var notes: String = ""
-    var isStarred: Bool = false
+    var isClosed: Bool = false
     var createdAt: Date = Date.now
     /// A stable id for links, sync, and the agent CLI.
     var uuid: UUID = UUID()
 
-    init(title: String) {
-        self.title = title
+    init(name: String) {
+        self.name = name
     }
 }
 
 /// The sidebar pages. Snapshot mode walks through every case.
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case all, starred
+    case accounts, scheduled, budget, reports, categories, payees
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .all: "All Items"
-        case .starred: "Starred"
+        case .accounts: "All Accounts"
+        case .scheduled: "Scheduled"
+        case .budget: "Budget"
+        case .reports: "Reports"
+        case .categories: "Categories"
+        case .payees: "Payees"
         }
     }
 
     var symbol: String {
         switch self {
-        case .all: "tray"
-        case .starred: "star"
+        case .accounts: "building.columns"
+        case .scheduled: "calendar"
+        case .budget: "envelope"
+        case .reports: "chart.bar"
+        case .categories: "folder"
+        case .payees: "person.2"
         }
     }
 }
@@ -41,7 +49,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 @Observable
 final class AppModel {
     let container: ModelContainer
-    var sidebar: SidebarItem? = .all
+    var sidebar: SidebarItem? = .accounts
     var selection: PersistentIdentifier?
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
     var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .general {
@@ -52,10 +60,10 @@ final class AppModel {
         self.container = container
     }
 
-    func addItem(title: String = "") {
-        let item = Item(title: ItemTitle.clean(title))
-        if sidebar == .starred { item.isStarred = true }
-        container.mainContext.insert(item)
-        selection = item.id
+    func addAccount(name: String = "") {
+        let account = Account(name: AccountName.clean(name))
+        container.mainContext.insert(account)
+        sidebar = .accounts
+        selection = account.id
     }
 }
