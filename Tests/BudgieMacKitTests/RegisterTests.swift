@@ -105,3 +105,39 @@ struct ClearingTests {
         #expect(!Clearing.willClear([a, b]))
     }
 }
+
+/// S-011: the register filter.
+@MainActor
+@Suite("Register filter")
+struct RegisterFilterTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+
+    @Test("Hidden rows leave the running balance alone")
+    func hiding() throws {
+        let account = Account(name: "Bank")
+        context.insert(account)
+        for (index, status) in ["reconciled", "cleared", "uncleared"].enumerated() {
+            let transaction = Transaction(account: account, date: Day.parse("2026-09-0\(index + 1)")!, payee: status, amount: 10)
+            transaction.cleared = status != "uncleared"
+            transaction.reconciled = status == "reconciled"
+            context.insert(transaction)
+        }
+        try context.save()
+        let rows = Register.rows(Register.fetch(account, in: context), openingBalance: 0)
+        let shown = Register.visible(rows, hideReconciled: true, hideCleared: false)
+        #expect(shown.map(\.transaction.payee) == ["cleared", "uncleared"])
+        #expect(shown.map(\.balance) == [20, 30])
+        #expect(Register.visible(rows, hideReconciled: true, hideCleared: true).map(\.transaction.payee) == ["uncleared"])
+        #expect(Register.filterSummary(hideReconciled: true, hideCleared: false) == "Hiding Reconciled")
+        #expect(Register.filterSummary(hideReconciled: false, hideCleared: false) == nil)
+    }
+
+    @Test("The filter is saved in preferences, one row for every register")
+    func saved() throws {
+        Preferences.current(in: context).hideReconciled = true
+        try context.save()
+        #expect(Preferences.current(in: context).hideReconciled)
+        #expect(try context.fetchCount(FetchDescriptor<Preferences>()) == 1)
+    }
+}

@@ -185,7 +185,7 @@ Depends: S-005
 Acceptance:
 - [snap] The filter control shows which filters are on ("Hiding reconciled").
 - [unit] The filter choices are saved in preferences and apply to every register.
-Status: todo
+Status: done
 
 ### S-012 Pick a category by typing
 As the user, I type part of a category name in the transaction sheet and choose from the matches, shown with their parents.

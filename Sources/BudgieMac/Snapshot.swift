@@ -54,7 +54,14 @@ enum Snapshot {
                         capture(to: "\(dir)/register-\(account.type.rawValue)-\(mode).png")
                     }
                     if let current = shown.first(where: { $0.type == .bank }) {
+                        // S-011: the register with reconciled rows hidden.
+                        let context = model.container.mainContext
                         model.sidebar = .account(current.uuid)
+                        Preferences.current(in: context).hideReconciled = true
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/register-filtered-\(mode).png")
+                        Preferences.current(in: context).hideReconciled = false
+                        try? await Task.sleep(for: .seconds(0.5))
                         model.transactionSheet = .add(account: current.uuid)
                         try? await Task.sleep(for: .seconds(1))
                         capture(to: "\(dir)/add-transaction-\(mode).png", withSheet: true)

@@ -9,6 +9,7 @@ struct RegisterPage: View {
     @Environment(\.undoManager) private var undoManager
     @Query private var accounts: [Account]
     @Query private var transactions: [Transaction]
+    @Query private var preferences: [Preferences]
 
     init(uuid: UUID) {
         _accounts = Query(filter: #Predicate<Account> { $0.uuid == uuid })
@@ -19,7 +20,7 @@ struct RegisterPage: View {
         if let account = accounts.first {
             register(account)
                 .navigationTitle(account.name)
-                .navigationSubtitle("Balance \(Money.string(account.balance, currency: account.currency)) · Cleared \(Money.string(account.clearedBalance, currency: account.currency))")
+                .navigationSubtitle(subtitle(account))
                 .toolbar { toolbar }
         } else {
             ContentUnavailableView("No Account", systemImage: "building.columns")
@@ -27,8 +28,17 @@ struct RegisterPage: View {
     }
 
     @ViewBuilder private func register(_ account: Account) -> some View {
-        let rows = Register.rows(transactions, openingBalance: account.openingBalance)
-        if rows.isEmpty {
+        let all = Register.rows(transactions, openingBalance: account.openingBalance)
+        let rows = Register.visible(all, hideReconciled: hideReconciled, hideCleared: hideCleared)
+        if !all.isEmpty && rows.isEmpty {
+            ContentUnavailableView {
+                Label("No Transactions Shown", systemImage: "line.3.horizontal.decrease")
+            } description: {
+                Text("All transactions are hidden by the current filter.")
+            } actions: {
+                Button("Show All") { setFilter(reconciled: false, cleared: false) }
+            }
+        } else if rows.isEmpty {
             ContentUnavailableView {
                 Label("No Transactions", systemImage: "list.bullet.rectangle")
             } description: {
@@ -112,11 +122,44 @@ struct RegisterPage: View {
         }
     }
 
+    /// "Balance £4,778.58 · Cleared £5,137.22", plus "· Hiding Reconciled" when filtered.
+    private func subtitle(_ account: Account) -> String {
+        [
+            "Balance \(Money.string(account.balance, currency: account.currency))",
+            "Cleared \(Money.string(account.clearedBalance, currency: account.currency))",
+            Register.filterSummary(hideReconciled: hideReconciled, hideCleared: hideCleared),
+        ].compactMap(\.self).joined(separator: " · ")
+    }
+
+    private var hideReconciled: Bool { preferences.first?.hideReconciled ?? false }
+    private var hideCleared: Bool { preferences.first?.hideCleared ?? false }
+
+    /// Saved in Preferences, so every register uses the same filter.
+    private func setFilter(reconciled: Bool, cleared: Bool) {
+        let context = model.container.mainContext
+        let preferences = Preferences.current(in: context)
+        preferences.hideReconciled = reconciled
+        preferences.hideCleared = cleared
+        try? context.save()
+    }
+
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            Menu("Filter", systemImage: "line.3.horizontal.decrease") {}
-                .disabled(true)
-                .help("Hide reconciled or cleared transactions (coming with S-011)")
+            Menu {
+                Toggle("Hide Reconciled", isOn: Binding(get: { hideReconciled }, set: { setFilter(reconciled: $0, cleared: hideCleared) }))
+                Toggle("Hide Cleared", isOn: Binding(get: { hideCleared }, set: { setFilter(reconciled: hideReconciled, cleared: $0) }))
+                Divider()
+                Button("Show All") { setFilter(reconciled: false, cleared: false) }
+                    .disabled(!hideReconciled && !hideCleared)
+            } label: {
+                if let summary = Register.filterSummary(hideReconciled: hideReconciled, hideCleared: hideCleared) {
+                    Label("Filter · \(summary)", systemImage: "line.3.horizontal.decrease.circle.fill")
+                        .labelStyle(.titleAndIcon)
+                } else {
+                    Label("Filter", systemImage: "line.3.horizontal.decrease")
+                }
+            }
+            .help(Register.filterSummary(hideReconciled: hideReconciled, hideCleared: hideCleared) ?? "Hide reconciled or cleared transactions")
             Button("Reconcile…", systemImage: "checkmark.seal") {}
                 .disabled(true)
                 .help("Reconcile this account against a statement (coming with reconciliation)")

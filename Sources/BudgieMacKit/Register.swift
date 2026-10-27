@@ -55,3 +55,37 @@ public enum Register {
         }
     }
 }
+
+// S-011: hide reconciled or cleared rows. Running balances are worked out on
+// every row first, so hiding rows never changes the balances shown.
+public extension Register {
+    static func visible(_ rows: [RegisterRow], hideReconciled: Bool, hideCleared: Bool) -> [RegisterRow] {
+        rows.filter { row in
+            switch row.transaction.status {
+            case .reconciled: !hideReconciled
+            case .cleared: !hideCleared
+            case .uncleared: true
+            }
+        }
+    }
+
+    /// "Hiding Reconciled", "Hiding Cleared", "Hiding Reconciled and Cleared", or nil.
+    static func filterSummary(hideReconciled: Bool, hideCleared: Bool) -> String? {
+        switch (hideReconciled, hideCleared) {
+        case (true, true): "Hiding Reconciled and Cleared"
+        case (true, false): "Hiding Reconciled"
+        case (false, true): "Hiding Cleared"
+        case (false, false): nil
+        }
+    }
+}
+
+public extension Preferences {
+    /// The one Preferences row, made on first use.
+    static func current(in context: ModelContext) -> Preferences {
+        if let existing = try? context.fetch(FetchDescriptor<Preferences>()).first { return existing }
+        let preferences = Preferences()
+        context.insert(preferences)
+        return preferences
+    }
+}
