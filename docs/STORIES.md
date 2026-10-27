@@ -99,7 +99,7 @@ UX:
 - States: empty "No Transactions" / "Add the first transaction for Everyday Current." with "Add Transaction"; filtered-to-nothing "All transactions are hidden by the current filter." with "Show All"; too much: payee and notes truncate with a tooltip, and 10,000 rows scroll smoothly (lazy Table)
 - Words: columns "Date", "Payee", "Category", "Amount", "Balance", "Status"; status shows "Uncleared", "Cleared" or "Reconciled" with an icon (empty circle, checkmark circle, lock)
 - Access: colour is never the only signal (minus sign, status icon and word); VoiceOver reads a row as "10 August 2026, Corner Grocer, Groceries, minus £70.20, balance £5,082.22, cleared"
-Status: todo
+Status: done (Filter, Reconcile… and Forecast are in the toolbar but disabled until S-011, reconciliation and forecast; Add Transaction is wired in S-006; the 300 ms check times the fetch and running balance, not drawing)
 
 ### S-006 Add a transaction
 As the user, I press Command-N in a register, enter date, payee, category, withdrawal or deposit, notes and cleared, and the row appears in the register.

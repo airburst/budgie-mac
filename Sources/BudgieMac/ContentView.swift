@@ -33,25 +33,7 @@ struct ContentView: View {
             ContentUnavailableView(page.title, systemImage: page.symbol)
                 .navigationTitle(page.title)
         case .account(let uuid):
-            AccountDetail(uuid: uuid)
-        }
-    }
-}
-
-/// An account's page. The register comes with S-005.
-private struct AccountDetail: View {
-    @Query private var accounts: [Account]
-
-    init(uuid: UUID) {
-        _accounts = Query(filter: #Predicate<Account> { $0.uuid == uuid })
-    }
-
-    var body: some View {
-        if let account = accounts.first {
-            ContentUnavailableView(account.name, systemImage: account.type.symbol)
-                .navigationTitle(account.name)
-        } else {
-            ContentUnavailableView("No Account", systemImage: "building.columns")
+            RegisterPage(uuid: uuid)
         }
     }
 }

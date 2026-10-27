@@ -10,7 +10,8 @@ import SwiftUI
 /// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
 /// APP_SNAPSHOT_PAGES=accounts,budget limits the pages. Add "settings" to include Settings,
-/// "import" for the import confirmation and banner, "add-account" for the Add Account sheet.
+/// "import" for the import confirmation and banner, "add-account" for the Add Account sheet,
+/// "register" for the Everyday Current and credit card registers.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
@@ -39,6 +40,19 @@ enum Snapshot {
                     model.sidebar = .page(page)
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                }
+            }
+            if only == nil || only?.contains("register") == true {
+                // The first two open accounts by name: a credit card and a bank account in the seed data.
+                let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
+                let shown = open.filter { $0.name == "Everyday Current" || $0.type == .creditCard }
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    for account in shown {
+                        model.sidebar = .account(account.uuid)
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/register-\(account.type.rawValue)-\(mode).png")
+                    }
                 }
             }
             if only == nil || only?.contains("add-account") == true {

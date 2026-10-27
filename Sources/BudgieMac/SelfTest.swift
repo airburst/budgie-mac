@@ -59,6 +59,24 @@ enum SelfTest {
                 let open = (try? context.fetch(Account.openAccounts)) ?? []
                 check("deleting an account hides it from lists", !open.contains { $0.uuid == account.uuid })
             }
+            // S-005: a register of 2,000 transactions opens in under 300 ms.
+            let big = Account(name: "Self-test Big Register")
+            context.insert(big)
+            let start = Day.parse("2020-01-01")!
+            for index in 0..<2_000 {
+                context.insert(Transaction(account: big, date: start.addingTimeInterval(Double(index) * 86_400),
+                                           payee: "Payee \(index % 40)", amount: Decimal(index % 7) - 3))
+            }
+            try? context.save()
+            let clock = ContinuousClock()
+            var rows: [RegisterRow] = []
+            let elapsed = clock.measure {
+                rows = Register.rows(Register.fetch(big, in: context), openingBalance: big.openingBalance)
+            }
+            check("a 2,000-transaction register loads in under 300 ms", rows.count == 2_000 && elapsed < .milliseconds(300),
+                  "\(rows.count) rows in \(elapsed)")
+            check("the register's last running balance is the account balance", rows.last?.balance == big.balance)
+
             check("account names are cleaned", AccountName.clean("  Joint   Account ") == "Joint Account")
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
