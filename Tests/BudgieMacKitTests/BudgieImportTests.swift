@@ -124,3 +124,56 @@ struct BudgieImportTests {
         #expect(throws: BudgieImport.Failure.notBudgieData) { try BudgieImport.read(Data("{\"a\":1}".utf8)) }
     }
 }
+
+/// S-053: export, then import into a fresh store, gives the same data.
+@MainActor
+@Suite("Budgie export")
+struct BudgieExportTests {
+    @Test("Exporting and importing back gives identical data")
+    func roundTrip() throws {
+        let first = try BudgieSchema.inMemory()
+        try BudgieImport.replaceAll(in: first.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
+        let exported = BudgieExport.data(from: first.mainContext, exportedAt: Date(timeIntervalSince1970: 1_800_000_000))
+        // Our own reader checks the checksum against the file's bytes.
+        let package = try BudgieImport.read(exported)
+        let second = try BudgieSchema.inMemory()
+        let summary = try BudgieImport.replaceAll(in: second.mainContext, with: package)
+        #expect(summary == BudgieImport.Summary(accounts: 4, categories: 4, transactions: 6, reconciliations: 1, scheduledTransactions: 2,
+                                                payees: 2, envelopes: 2, envelopeCategories: 1, budgetAllocations: 2, budgetTransfers: 1))
+        func describe(_ context: ModelContext) throws -> [String] {
+            try context.fetch(FetchDescriptor<Transaction>()).map {
+                "\($0.uuid) \(Day.string($0.date)) \($0.payee) \($0.amount) \($0.account?.uuid.uuidString ?? "") \($0.category?.uuid.uuidString ?? "") \($0.cleared) \($0.reconciled) \($0.transferUUID?.uuidString ?? "")"
+            }.sorted()
+        }
+        #expect(try describe(first.mainContext) == describe(second.mainContext))
+        let a = try first.mainContext.fetch(FetchDescriptor<Account>()).map { "\($0.uuid) \($0.name) \($0.openingBalance) \($0.currency) \($0.softDeleted) \($0.creditLimit ?? 0)" }.sorted()
+        let b = try second.mainContext.fetch(FetchDescriptor<Account>()).map { "\($0.uuid) \($0.name) \($0.openingBalance) \($0.currency) \($0.softDeleted) \($0.creditLimit ?? 0)" }.sorted()
+        #expect(a == b)
+        let prefs = try second.mainContext.fetch(FetchDescriptor<Preferences>()).first
+        #expect(prefs?.hideReconciled == true && prefs?.accountShortcuts.count == 1)
+    }
+
+    @Test("Numbers and strings are written as JavaScript writes them")
+    func javascriptForms() {
+        #expect(BudgieExport.JSON.number(Decimal(string: "70.20")!) == "70.2")
+        #expect(BudgieExport.JSON.number(Decimal(string: "-1150")!) == "-1150")
+        #expect(BudgieExport.JSON.number(Decimal(string: "0.1")!) == "0.1")
+        #expect(BudgieExport.JSON.quote("Café \"A\"\n") == "\"Café \\\"A\\\"\\n\"")
+    }
+}
+
+/// Writes an export for checking with Budgie's own reader:
+/// BUDGIEMAC_EXPORT_TO=/path swift test --filter writeExport
+@MainActor
+@Test("Write an export for Budgie to check", .enabled(if: ProcessInfo.processInfo.environment["BUDGIEMAC_EXPORT_TO"] != nil))
+func writeExport() throws {
+    let container = try BudgieSchema.inMemory()
+    try BudgieImport.replaceAll(in: container.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
+    let first = container.mainContext.fetch2(Account.self).first!
+    first.notes = "Café \"quoted\"\nline two"
+    try BudgieExport.data(from: container.mainContext).write(to: URL(fileURLWithPath: ProcessInfo.processInfo.environment["BUDGIEMAC_EXPORT_TO"]!))
+}
+
+private extension ModelContext {
+    func fetch2<T: PersistentModel>(_ type: T.Type) -> [T] { (try? fetch(FetchDescriptor<T>())) ?? [] }
+}

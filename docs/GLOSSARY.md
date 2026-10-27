@@ -61,3 +61,17 @@ new term.
 | Accounts page and "Dashboard" in Open on launch | All Accounts | One name; "Accounts" is the sidebar section heading |
 | Transactions (register title) | The account's name | The sidebar selection already says it's transactions; the name says which account |
 | Single keys A, S, B, F, R | ⌘1 to ⌘4, ⌘R, ⇧⌘F (see S-049) | Mac apps use Command shortcuts in menus |
+
+## Keyboard shortcuts
+
+Budgie's single keys fire while you type in a web page; on the Mac they become menu shortcuts (S-049).
+
+| Budgie key | Command | Mac shortcut |
+| --- | --- | --- |
+| A | New Transaction | ⌘N |
+| S | Scheduled | ⌘2 |
+| B | Budget | ⌘3 |
+| F | Find | ⌘F |
+| R | Reconcile… | ⌘R |
+
+Account shortcuts (S-050) use ⌃ with a key, so they never clash with these.

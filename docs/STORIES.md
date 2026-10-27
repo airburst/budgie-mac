@@ -590,7 +590,7 @@ Depends: S-002
 Acceptance:
 - [unit] The export is a Budgie portable package v1; importing it back gives identical data.
 - [manual] The export imports into the Budgie web app without errors.
-Status: todo
+Status: done (verified with Budgie's own parsePortableData; the [manual] import into the Budgie web app is still to do)
 
 ### S-054 Back up and restore automatically
 As the user, BudgieMac backs up my data on quit and I can restore any backup.

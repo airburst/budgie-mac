@@ -56,6 +56,8 @@ struct BudgieMacApp: App {
                 Divider()
                 Button("Import Budgie Data…") { model.importFlow.chooseFile() }
                     .keyboardShortcut("i", modifiers: [.command, .shift])
+                Button("Export Budgie Data…") { model.exportData() }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
             }
         }
 

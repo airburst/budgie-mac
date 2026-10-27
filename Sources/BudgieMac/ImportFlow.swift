@@ -115,3 +115,24 @@ struct ImportBanner: View {
         .padding(.top, Space.sm)
     }
 }
+
+/// S-053: File > Export Budgie Data… writes a file Budgie and BudgieMac can import.
+extension AppModel {
+    func exportData() {
+        guard let window = NSApp.mainAppWindow else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "budgie-export-\(Day.string(Day.today)).json"
+        panel.message = "Budgie and BudgieMac can both import this file."
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try BudgieExport.data(from: self.container.mainContext).write(to: url, options: .atomic)
+            } catch {
+                let alert = NSAlert(error: error)
+                alert.messageText = "Unable to export “\(url.lastPathComponent)”"
+                alert.beginSheetModal(for: window)
+            }
+        }
+    }
+}
