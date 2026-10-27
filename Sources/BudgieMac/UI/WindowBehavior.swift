@@ -75,3 +75,10 @@ private struct WindowHook: NSViewRepresentable {
         }
     }
 }
+
+extension NSApplication {
+    /// The main window, even while the app isn't active (snapshots, self-test).
+    var mainAppWindow: NSWindow? {
+        mainWindow ?? windows.first { $0.canBecomeMain && !$0.isSheet && $0.isVisible }
+    }
+}
