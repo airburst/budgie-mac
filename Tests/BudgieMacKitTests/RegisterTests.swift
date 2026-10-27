@@ -140,3 +140,20 @@ struct RegisterFilterTests {
         #expect(try context.fetchCount(FetchDescriptor<Preferences>()) == 1)
     }
 }
+
+@Suite("Register search")
+struct RegisterSearchTests {
+    @Test("Typing 55 matches -£55.00; words match payee, category and notes")
+    func search() {
+        let fuel = Transaction(account: nil, payee: "Fuel Stop", amount: Decimal(string: "-55.00")!, category: BudgieMacKit.Category(name: "Fuel", parent: BudgieMacKit.Category(name: "Motoring")))
+        fuel.notes = "Long drive"
+        #expect(Register.matches(fuel, "55"))
+        #expect(Register.matches(fuel, "£55.00"))
+        #expect(Register.matches(fuel, "fuel"))
+        #expect(Register.matches(fuel, "motoring"))
+        #expect(Register.matches(fuel, "drive"))
+        #expect(!Register.matches(fuel, "66"))
+        #expect(!Register.matches(fuel, "grocer"))
+        #expect(Register.matches(fuel, " "))
+    }
+}

@@ -25,6 +25,9 @@ struct RegisterPage: View {
                 .onAppear { model.prepareReconcile(account) }
         } else if let account = accounts.first {
             register(account)
+                .searchable(text: Bindable(model).registerSearch, isPresented: Bindable(model).registerSearching,
+                            placement: .toolbar, prompt: "Payee, category, notes or amount")
+                .onChange(of: account.uuid) { _, _ in model.registerSearch = "" }
                 .navigationTitle(account.name)
                 .navigationSubtitle(subtitle(account))
                 .toolbar { toolbar }
@@ -36,7 +39,10 @@ struct RegisterPage: View {
     @ViewBuilder private func register(_ account: Account) -> some View {
         let all = Register.rows(transactions, openingBalance: account.openingBalance)
         let rows = Register.visible(all, hideReconciled: hideReconciled, hideCleared: hideCleared)
-        if !all.isEmpty && rows.isEmpty {
+            .filter { Register.matches($0.transaction, model.registerSearch) }
+        if !all.isEmpty && rows.isEmpty && !model.registerSearch.trimmingCharacters(in: .whitespaces).isEmpty {
+            ContentUnavailableView.search(text: model.registerSearch)
+        } else if !all.isEmpty && rows.isEmpty {
             ContentUnavailableView {
                 Label("No Transactions Shown", systemImage: "line.3.horizontal.decrease")
             } description: {

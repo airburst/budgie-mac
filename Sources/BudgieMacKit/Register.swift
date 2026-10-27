@@ -89,3 +89,18 @@ public extension Preferences {
         return preferences
     }
 }
+
+// S-051: search a register by payee, category, notes or amount.
+public extension Register {
+    /// "55" matches -£55.00 and 55.00; words match payee, category path and notes.
+    static func matches(_ transaction: Transaction, _ query: String) -> Bool {
+        let text = query.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return true }
+        let amount = abs(transaction.amount).formatted(.number.precision(.fractionLength(2)).grouping(.never).locale(Locale(identifier: "en_US_POSIX")))
+        let digits = text.filter { $0.isNumber || $0 == "." }
+        return transaction.payee.localizedStandardContains(text)
+            || (transaction.category?.path.localizedStandardContains(text) ?? false)
+            || (transaction.notes?.localizedStandardContains(text) ?? false)
+            || (!digits.isEmpty && digits == text.filter { !"£$€-+,".contains($0) } && amount.contains(digits))
+    }
+}

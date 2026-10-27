@@ -82,6 +82,10 @@ final class AppModel {
 
     /// The selected rows in the open register.
     var selectedTransactions = Set<PersistentIdentifier>()
+    /// S-051: the register's search text, and whether the field is active (⌘F).
+    var registerSearch = ""
+    var registerSearching = false
+
     /// The Add or Edit Transaction sheet, when open.
     var transactionSheet: TransactionSheetMode?
 

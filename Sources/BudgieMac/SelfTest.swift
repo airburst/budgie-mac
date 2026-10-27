@@ -214,6 +214,12 @@ enum SelfTest {
             Envelopes.delete(second, context: context)
             try? context.save()
 
+            // S-051: search narrows the register; clearing it shows everything again.
+            let walletRows = Register.rows(Register.fetch(wallet, in: context), openingBalance: wallet.openingBalance)
+            let searched = walletRows.filter { Register.matches($0.transaction, "café") }
+            check("search narrows the register", !searched.isEmpty && searched.count < walletRows.count || walletRows.count == searched.count)
+            check("an empty search shows every row", walletRows.filter { Register.matches($0.transaction, "") }.count == walletRows.count)
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

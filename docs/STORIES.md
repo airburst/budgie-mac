@@ -572,7 +572,7 @@ Depends: S-005
 Acceptance:
 - [self] Search narrows the register as I type; Escape clears it.
 - [unit] Typing "55" matches -£55.00.
-Status: todo
+Status: done (⌘F is wired with the menus in S-049; Escape clearing is the search field's own)
 
 ### S-052 Choose appearance, start page and autofill
 As the user, I open Settings (⌘,) and set the theme, the page to open on launch, and payee autofill.
