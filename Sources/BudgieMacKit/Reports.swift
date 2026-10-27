@@ -18,14 +18,15 @@ public enum Reports {
             }
         }
 
-        /// First and last day, inclusive.
+        /// First and last day, inclusive. "Last 90 Days" starts 90 days
+        /// before today, as Budgie, so it spans 91 days.
         public func range(today: Date = Day.today) -> ClosedRange<Date> {
             let calendar = Day.calendar
             let monthStart = Day.parse(Budget.month(of: today) + "-01")!
             switch self {
-            case .last30: return calendar.date(byAdding: .day, value: -29, to: today)!...today
-            case .last60: return calendar.date(byAdding: .day, value: -59, to: today)!...today
-            case .last90: return calendar.date(byAdding: .day, value: -89, to: today)!...today
+            case .last30: return calendar.date(byAdding: .day, value: -30, to: today)!...today
+            case .last60: return calendar.date(byAdding: .day, value: -60, to: today)!...today
+            case .last90: return calendar.date(byAdding: .day, value: -90, to: today)!...today
             case .thisMonth: return monthStart...today
             case .lastMonth:
                 let start = calendar.date(byAdding: .month, value: -1, to: monthStart)!
@@ -103,9 +104,7 @@ public enum Reports {
         while month <= last {
             let monthEnd = Day.calendar.date(byAdding: .day, value: -1, to: Day.parse(Budget.month(month, adding: 1) + "-01")!)!
             let end = min(monthEnd, range.upperBound)
-            let total = shown.reduce(Decimal(0)) { sum, account in
-                account.transactions.reduce(sum + account.openingBalance) { $0 + ($1.date <= end ? $1.amount : 0) }
-            }
+            let total = shown.reduce(Decimal(0)) { $0 + $1.balance(on: end) }
             points.append(NetWorthPoint(month: month, netWorth: total))
             month = Budget.month(month, adding: 1)
         }
@@ -124,15 +123,16 @@ public enum Reports {
 
     static let assetTypes: Set<AccountType> = [.bank, .investment, .cash]
 
-    /// S-048: Total Assets and Total Debt per currency; Monthly Surplus and
+    /// S-048: Total Assets and Total Debt per currency, as of today (entries
+    /// dated later are left out, as in Net Worth and the forecast); Monthly Surplus and
     /// Saving Rate (surplus ÷ income) for the latest complete month in range.
     public static func figures(accounts: [Account], months: [MonthTotals], today: Date = Day.today) -> Figures {
         var figures = Figures()
         for account in accounts {
             if assetTypes.contains(account.type) {
-                figures.assets[account.currency, default: 0] += account.balance
+                figures.assets[account.currency, default: 0] += account.balance(on: today)
             } else {
-                figures.debt[account.currency, default: 0] += abs(account.balance)
+                figures.debt[account.currency, default: 0] += abs(account.balance(on: today))
             }
         }
         let thisMonth = Budget.month(of: today)

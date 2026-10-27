@@ -113,6 +113,8 @@ final class AppModel {
     var forecastFor: UUID?
     /// The day the forecast chart reads out, set by hover or click; snapshot mode sets it too.
     var forecastFocus: Date?
+    /// The month the Net Worth chart reads out ("2026-10"), set by hover or click.
+    var netWorthFocus: String?
 
     /// Reconcile… sheet for an account (S-021).
     var reconcileSheet: ReconcileTarget?

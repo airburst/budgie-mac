@@ -165,7 +165,7 @@ public enum Forecast {
     /// Where the forecast starts: the opening balance plus every transaction
     /// dated today or earlier. Later entries come in as rows on their own day.
     public static func startBalance(of account: Account, today: Date = Day.today) -> Decimal {
-        account.transactions.reduce(account.openingBalance) { $0 + ($1.date <= today ? $1.amount : 0) }
+        account.balance(on: today)
     }
 
     /// Projected rows for one account after today: register entries dated

@@ -228,6 +228,7 @@ private struct IncomeExpensesCard: View {
 private struct NetWorthCard: View {
     let points: [Reports.NetWorthPoint]
     let currency: String
+    @Environment(AppModel.self) private var model
 
     var body: some View {
         // Signed headline: "-£573.48", never "£-573.48".
@@ -246,9 +247,40 @@ private struct NetWorthCard: View {
                     .foregroundStyle(ChartColors.series[0])
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .symbol(.circle)
+                if point.month == model.netWorthFocus {
+                    // Hover or click: a guide, a bigger point, and the month's value.
+                    RuleMark(x: .value("Month", Budget.title(of: point.month)))
+                        .foregroundStyle(.secondary)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    PointMark(x: .value("Month", Budget.title(of: point.month)), y: .value("Net Worth", NSDecimalNumber(decimal: point.netWorth).doubleValue))
+                        .symbolSize(80)
+                        .foregroundStyle(ChartColors.series[0])
+                        .annotation(position: .topTrailing, spacing: Space.xs,
+                                    overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(Budget.title(of: point.month)).font(.caption).foregroundStyle(.secondary)
+                                Text(Money.string(point.netWorth, currency: currency)).font(.callout.weight(.semibold)).monospacedDigit()
+                            }
+                            .padding(.horizontal, Space.sm)
+                            .padding(.vertical, Space.xs)
+                            .background(.background.secondary, in: .rect(cornerRadius: Space.sm))
+                        }
+                }
             }
             .chartYScale(domain: domain)
             .chartYAxis { currencyAxis(currency) }
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    Rectangle().fill(.clear).contentShape(.rect)
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active(let location): focus(at: location, proxy: proxy, geometry: geometry)
+                            case .ended: model.netWorthFocus = nil
+                            }
+                        }
+                        .gesture(DragGesture(minimumDistance: 0).onChanged { focus(at: $0.location, proxy: proxy, geometry: geometry) })
+                }
+            }
             .frame(height: 200)
         } values: {
             Grid(alignment: .leading, horizontalSpacing: Space.lg, verticalSpacing: Space.xs) {
@@ -261,6 +293,15 @@ private struct NetWorthCard: View {
                 }
             }
         }
+    }
+
+    /// The month nearest the pointer.
+    private func focus(at location: CGPoint, proxy: ChartProxy, geometry: GeometryProxy) {
+        guard let frame = proxy.plotFrame.map({ geometry[$0] }) else { return }
+        let x = location.x - frame.origin.x
+        model.netWorthFocus = points.min { a, b in
+            abs((proxy.position(forX: Budget.title(of: a.month)) ?? .infinity) - x) < abs((proxy.position(forX: Budget.title(of: b.month)) ?? .infinity) - x)
+        }?.month
     }
 }
 

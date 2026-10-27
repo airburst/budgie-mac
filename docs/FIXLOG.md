@@ -48,3 +48,10 @@ Symptom: the forecast started from the account's full balance, so a register ent
 Cause: `ForecastView` started from `Account.balance`, which sums every transaction whatever its date, and listed only scheduled rows. Budgie starts from the opening balance plus transactions dated today or earlier, and adds later register entries as rows. It also skips scheduled dates on or before today.
 Fix: `Forecast.startBalance(of:today:)`, register rows dated after today in `Forecast.rows`, overdue schedule dates skipped, and a test with a future-dated entry.
 Rule: anything that projects balances forward starts from the balance as of today, never from `Account.balance`.
+
+## Reports differed from Budgie (2026-10-27)
+
+Symptom: Spending by Category was lower than Budgie's for Last 90 Days (Holiday by £240, Groceries by £39.87, Other by £13.72). Net Worth was £1,869 higher than Total Assets for the same day.
+Cause: Budgie's "Last N Days" starts N days before today (N + 1 days in all); ours started N - 1 days before, so 29 Jul was missing. Total Assets and Total Debt used `Account.balance`, which counts entries dated after today, while Net Worth counted them only from their date.
+Fix: the periods start N days back, as Budgie does. Total Assets and Total Debt use `Account.balance(on: today)`, which is also used by Net Worth and the forecast. Here BudgieMac deliberately differs from Budgie, which counts future-dated entries now; the user chose this.
+Rule: port date ranges with Budgie's exact arithmetic and test the first day. Any figure "as of" a day uses `balance(on:)`.

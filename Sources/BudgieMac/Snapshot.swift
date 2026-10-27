@@ -42,6 +42,13 @@ enum Snapshot {
                     model.sidebar = .page(page)
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                    if page == .reports {
+                        // The Net Worth readout, as on hover.
+                        model.netWorthFocus = Budget.month(of: Day.today)
+                        try? await Task.sleep(for: .seconds(0.5))
+                        capture(to: "\(dir)/reports-focus-\(mode).png")
+                        model.netWorthFocus = nil
+                    }
                 }
             }
             if only == nil || only?.contains("register") == true {

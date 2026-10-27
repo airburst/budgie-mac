@@ -8,6 +8,12 @@ public extension Account {
         transactions.reduce(openingBalance) { $0 + $1.amount }
     }
 
+    /// Opening balance plus every transaction dated on or before `day`:
+    /// the balance as of that day, leaving out entries dated later.
+    func balance(on day: Date) -> Decimal {
+        transactions.reduce(openingBalance) { $0 + ($1.date <= day ? $1.amount : 0) }
+    }
+
     /// Opening balance plus cleared and reconciled transactions.
     var clearedBalance: Decimal {
         transactions.reduce(openingBalance) { $0 + (($1.cleared || $1.reconciled) ? $1.amount : 0) }

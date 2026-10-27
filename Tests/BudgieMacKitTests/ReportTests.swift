@@ -66,6 +66,7 @@ struct ReportTests {
         let bank = Account(name: "Bank", openingBalance: 100), loan = Account(name: "Loan", type: .loan, openingBalance: -900)
         let euro = Account(name: "Euro", openingBalance: 50, currency: "EUR")
         [bank, loan, euro].forEach(context.insert)
+        context.insert(Transaction(account: bank, date: day("2026-11-20"), payee: "Later", amount: -1799))
         let months = [Reports.MonthTotals(month: "2026-09", income: 2000, expenses: 1500),
                       Reports.MonthTotals(month: "2026-10", income: 0, expenses: 200)]
         let figures = Reports.figures(accounts: [bank, loan, euro], months: months, today: day("2026-10-27"))
@@ -78,7 +79,8 @@ struct ReportTests {
     @Test("Period presets")
     func periods() {
         let today = day("2026-10-27")
-        #expect(Day.string(Reports.Period.last30.range(today: today).lowerBound) == "2026-09-28")
+        #expect(Day.string(Reports.Period.last30.range(today: today).lowerBound) == "2026-09-27")
+        #expect(Day.string(Reports.Period.last90.range(today: today).lowerBound) == "2026-07-29", "Budgie: 90 days before today")
         #expect(Day.string(Reports.Period.lastMonth.range(today: today).lowerBound) == "2026-09-01")
         #expect(Day.string(Reports.Period.lastMonth.range(today: today).upperBound) == "2026-09-30")
         #expect(Day.string(Reports.Period.thisYear.range(today: today).lowerBound) == "2026-01-01")
