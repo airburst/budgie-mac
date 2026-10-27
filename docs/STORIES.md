@@ -642,7 +642,7 @@ As the user, BudgieMac has its own icon, not Budgie's.
 Screens: none (snapshot: Dock and Finder icon)
 Acceptance:
 - [snap] A Liquid Glass icon looks right in every appearance (made with the app-icon skill).
-Status: todo
+Status: done (a green budgie on a perch; Budgie's is a blue piggy bank)
 
 ## Later
 
