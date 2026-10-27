@@ -17,6 +17,9 @@ struct ContentView: View {
             // No .noInitialFocus(): this sheet opens with focus in Name (S-004).
             NavigationStack { AddAccountSheet() }
         }
+        .sheet(item: Bindable(model).transactionSheet) { mode in
+            NavigationStack { TransactionSheet(mode: mode) }
+        }
         .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)

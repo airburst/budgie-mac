@@ -11,7 +11,7 @@ import SwiftUI
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
 /// APP_SNAPSHOT_PAGES=accounts,budget limits the pages. Add "settings" to include Settings,
 /// "import" for the import confirmation and banner, "add-account" for the Add Account sheet,
-/// "register" for the Everyday Current and credit card registers.
+/// "register" for the Everyday Current and credit card registers and the Add Transaction sheet.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
@@ -52,6 +52,14 @@ enum Snapshot {
                         model.sidebar = .account(account.uuid)
                         try? await Task.sleep(for: .seconds(0.8))
                         capture(to: "\(dir)/register-\(account.type.rawValue)-\(mode).png")
+                    }
+                    if let current = shown.first(where: { $0.type == .bank }) {
+                        model.sidebar = .account(current.uuid)
+                        model.transactionSheet = .add(account: current.uuid)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/add-transaction-\(mode).png", withSheet: true)
+                        model.transactionSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
                     }
                 }
             }

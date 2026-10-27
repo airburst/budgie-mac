@@ -59,6 +59,21 @@ enum SelfTest {
                 let open = (try? context.fetch(Account.openAccounts)) ?? []
                 check("deleting an account hides it from lists", !open.contains { $0.uuid == account.uuid })
             }
+            // S-006: adding a transaction updates the balance at once and can be undone.
+            let wallet = model.add(AccountDraft(currency: "GBP").named("Self-test Wallet"), undoManager: nil)
+            var spend = TransactionDraft()
+            spend.payee = "Self-test Café"
+            spend.withdrawal = "3.40"
+            let undoAdd = UndoManager()
+            let added = try? model.addTransaction(spend, to: wallet, undoManager: undoAdd)
+            check("Add Transaction updates the balance at once", wallet.balance == Decimal(string: "-3.40")!)
+            check("the new transaction is selected", added.map { model.selectedTransactions == [$0.persistentModelID] } ?? false)
+            check("Undo is named Undo Add Transaction", undoAdd.undoActionName == "Add Transaction")
+            undoAdd.undo()
+            check("undoing Add Transaction removes it", wallet.balance == 0)
+            spend.withdrawal = ""
+            check("an empty amount is refused", (try? model.addTransaction(spend, to: wallet, undoManager: nil)) == nil)
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

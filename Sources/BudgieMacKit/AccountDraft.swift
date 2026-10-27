@@ -32,6 +32,13 @@ public struct AccountDraft: Equatable, Sendable {
         return clean
     }
 
+    /// The same draft with a name, for tests and scripts.
+    public func named(_ name: String) -> AccountDraft {
+        var draft = self
+        draft.name = name
+        return draft
+    }
+
     public func makeAccount(locale: Locale = .current) -> Account {
         let account = Account(name: AccountName.clean(name), type: type,
                               openingBalance: Money.parse(openingBalance, locale: locale) ?? 0, currency: currency)

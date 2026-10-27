@@ -80,6 +80,55 @@ final class AppModel {
         self.container = container
     }
 
+    /// The selected rows in the open register.
+    var selectedTransactions = Set<PersistentIdentifier>()
+    /// The Add or Edit Transaction sheet, when open.
+    var transactionSheet: TransactionSheetMode?
+
+    /// The account whose register is open.
+    var openAccount: UUID? {
+        if case .account(let uuid) = sidebar { uuid } else { nil }
+    }
+
+    /// File > New Transaction (⌘N), the toolbar +, or the empty state.
+    func newTransaction() {
+        if let openAccount { transactionSheet = .add(account: openAccount) }
+    }
+
+    /// Adds the transaction, selects it, and offers "Undo Add Transaction".
+    @discardableResult
+    func addTransaction(_ draft: TransactionDraft, to account: Account, undoManager: UndoManager?) throws(TransactionDraft.Problem) -> Transaction {
+        let context = container.mainContext
+        let transaction = try draft.add(to: account, in: context)
+        try? context.save()
+        selectedTransactions = [transaction.persistentModelID]
+        undoManager?.registerUndo(withTarget: self) { model in
+            model.selectedTransactions.remove(transaction.persistentModelID)
+            context.delete(transaction)
+            try? context.save()
+        }
+        undoManager?.setActionName("Add Transaction")
+        return transaction
+    }
+
+    /// Saves the sheet into the transaction (and its transfer partner), and
+    /// offers "Undo Edit Transaction".
+    func edit(_ transaction: Transaction, with draft: TransactionDraft, undoManager: UndoManager?) throws(TransactionDraft.Problem) {
+        let context = container.mainContext
+        let before = TransactionValues(transaction)
+        let partner = Transfers.partner(of: transaction, in: context)
+        let partnerBefore = partner.map(TransactionValues.init)
+        try draft.apply(to: transaction, in: context)
+        Transfers.syncPartner(of: transaction, in: context)
+        try? context.save()
+        undoManager?.registerUndo(withTarget: self) { _ in
+            before.restore(transaction, in: context)
+            if let partner, let partnerBefore { partnerBefore.restore(partner, in: context) }
+            try? context.save()
+        }
+        undoManager?.setActionName("Edit Transaction")
+    }
+
     /// Shows the Add Account sheet (S-004).
     var isAddingAccount = false
 

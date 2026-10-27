@@ -116,7 +116,7 @@ UX:
 - States: typing in Withdrawal clears Deposit and the reverse; inline error under the amounts "Enter a withdrawal or a deposit." when Return is pressed with both empty; a date more than a year from today shows an inline note "That's more than a year from today." (adding still allowed)
 - Words: title "Add Transaction"; labels "Date", "Payee", "Category", "Withdrawal", "Deposit", "Notes", "Cleared"; buttons "Add Transaction" (default) and "Cancel"; + tooltip "Add a transaction to this account (⌘N)"
 - Access: the date field works by keyboard (↑/↓ change the focused part); Tab order Date -> Payee -> Category -> Withdrawal -> Deposit -> Notes -> Cleared; VoiceOver labels match the visible labels
-Status: todo
+Status: done
 
 ### S-007 Edit a transaction
 As the user, I double-click a transaction (or select it and press Return) and change any field.

@@ -8,7 +8,6 @@ struct RegisterPage: View {
     @Environment(AppModel.self) private var model
     @Query private var accounts: [Account]
     @Query private var transactions: [Transaction]
-    @State private var selection = Set<RegisterRow.ID>()
 
     init(uuid: UUID) {
         _accounts = Query(filter: #Predicate<Account> { $0.uuid == uuid })
@@ -33,17 +32,24 @@ struct RegisterPage: View {
                 Label("No Transactions", systemImage: "list.bullet.rectangle")
             } description: {
                 Text("Add the first transaction for \(account.name).")
+            } actions: {
+                Button("Add Transaction") { model.newTransaction() }
+                    .buttonStyle(.borderedProminent)
             }
         } else {
             ScrollViewReader { proxy in
                 table(rows, currency: account.currency)
                     .onAppear { proxy.scrollTo(rows.last?.id, anchor: .bottom) }
+                    .onChange(of: model.selectedTransactions) { _, selected in
+                        if let id = selected.first { proxy.scrollTo(id) }
+                    }
             }
         }
     }
 
     private func table(_ rows: [RegisterRow], currency: String) -> some View {
-        Table(rows, selection: $selection) {
+        @Bindable var model = model
+        return Table(rows, selection: $model.selectedTransactions) {
             TableColumn("Date") { row in
                 Text(row.transaction.date.formatted(Self.dayFormat))
                     .monospacedDigit()
@@ -92,8 +98,7 @@ struct RegisterPage: View {
                 .help("Forecast this account's balance (coming with M3)")
         }
         ToolbarItem {
-            Button("Add Transaction", systemImage: "plus") {}
-                .disabled(true)
+            Button("Add Transaction", systemImage: "plus") { model.newTransaction() }
                 .help("Add a transaction to this account (⌘N)")
         }
     }

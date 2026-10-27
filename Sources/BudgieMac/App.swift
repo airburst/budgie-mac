@@ -37,6 +37,9 @@ struct BudgieMacApp: App {
             }
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {
+                Button("New Transaction") { model.newTransaction() }
+                    .keyboardShortcut("n")
+                    .disabled(model.openAccount == nil)
                 Button("New Account…") { model.isAddingAccount = true }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
             }
