@@ -34,11 +34,20 @@ enum SelfTest {
             check("the new account is selected", model.selection != nil)
 
             if let account = accounts().first(where: { $0.id == model.selection }) {
-                account.isClosed.toggle()
-                check("closing an account marks it closed", account.isClosed)
-                context.delete(account)
+                // S-001: a transaction survives a reload of the store.
+                let transaction = Transaction(account: account, payee: "Corner Grocer", amount: Decimal(string: "-70.20")!)
+                context.insert(transaction)
                 try? context.save()
-                check("deleting the account removes it", accounts().count == before)
+                let reloaded = try? BudgieSchema.container(url: Store.url)
+                let uuid = transaction.uuid
+                let found = try? reloaded?.mainContext.fetch(FetchDescriptor<Transaction>(predicate: #Predicate { $0.uuid == uuid })).first
+                check("a saved transaction is there after reloading the store",
+                      found?.payee == "Corner Grocer" && found?.amount == Decimal(string: "-70.20")! && found?.account?.uuid == account.uuid)
+
+                account.deleted = true
+                try? context.save()
+                let open = (try? context.fetch(Account.openAccounts)) ?? []
+                check("deleting an account hides it from lists", !open.contains { $0.uuid == account.uuid })
             }
             check("account names are cleaned", AccountName.clean("  Joint   Account ") == "Joint Account")
 

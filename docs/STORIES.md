@@ -28,7 +28,7 @@ Acceptance:
 - [unit] Amounts are `Decimal`; 0.1 + 0.2 stored and read back equals 0.3 exactly.
 - [unit] Deleting an account or category is a soft delete (`deleted = true`) and hides it from lists.
 - [self] The self-test writes a transaction, reloads the store and finds it.
-Status: todo
+Status: done
 
 ### S-002 Import my data from Budgie
 As the user, I choose File > Import Budgie Data… and pick a Budgie data file, and all my accounts, transactions, schedules and budget appear.

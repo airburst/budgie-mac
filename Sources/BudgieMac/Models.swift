@@ -2,19 +2,11 @@ import Foundation
 import SwiftData
 import BudgieMacKit
 
-@Model
-final class Account {
-    var name: String
-    var notes: String = ""
-    var isClosed: Bool = false
-    var createdAt: Date = Date.now
-    /// A stable id for links, sync, and the agent CLI.
-    var uuid: UUID = UUID()
 
-    init(name: String) {
-        self.name = name
-    }
-}
+// SwiftUI and ObjectiveC have their own `Transaction` and `Category`; in this
+// module the names mean the data model.
+typealias Transaction = BudgieMacKit.Transaction
+typealias Category = BudgieMacKit.Category
 
 /// The sidebar pages. Snapshot mode walks through every case.
 enum SidebarItem: String, CaseIterable, Identifiable {

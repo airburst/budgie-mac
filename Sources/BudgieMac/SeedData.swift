@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import BudgieMacKit
 
 /// Sample data for snapshots: APP_SEED=1 with APP_STORE in /tmp fills an empty
 /// store with realistic accounts (short and long names, open and closed).
@@ -27,7 +28,7 @@ enum SeedData {
         ]
         for (index, sample) in samples.enumerated() {
             let account = Account(name: sample.0)
-            account.isClosed = sample.1
+            account.deleted = sample.1
             account.createdAt = Date.now.addingTimeInterval(Double(-index) * 3_600)
             context.insert(account)
         }

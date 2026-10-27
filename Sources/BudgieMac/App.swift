@@ -1,4 +1,5 @@
 import AppKit
+import BudgieMacKit
 import SwiftData
 import SwiftUI
 
@@ -78,7 +79,7 @@ enum Store {
 
     static func makeContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: Account.self, configurations: ModelConfiguration(url: url))
+            return try BudgieSchema.container(url: url)
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }

@@ -1,3 +1,4 @@
+import BudgieMacKit
 import SwiftData
 import SwiftUI
 
@@ -33,8 +34,8 @@ struct ContentView: View {
 
 struct AccountList: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.modelContext) private var context
-    @Query(sort: \Account.createdAt, order: .reverse) private var accounts: [Account]
+    @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.createdAt, order: .reverse)
+    private var accounts: [Account]
     let page: SidebarItem
 
     /// Only All Accounts lists anything yet; the other pages come with their stories.
@@ -45,10 +46,11 @@ struct AccountList: View {
     var body: some View {
         @Bindable var model = model
         List(visible, selection: $model.selection) { account in
-            Label(account.name, systemImage: account.isClosed ? "lock" : "building.columns")
+            Label(account.name, systemImage: "building.columns")
                 .tag(account.id)
                 .contextMenu {
-                    Button("Delete", role: .destructive) { context.delete(account) }
+                    // Accounts are soft deleted, so their history stays.
+                    Button("Delete", role: .destructive) { account.deleted = true }
                 }
         }
         .overlay {
@@ -83,8 +85,10 @@ struct AccountDetail: View {
             @Bindable var account = account
             Form {
                 TextField("Name", text: $account.name)
-                Toggle("Closed", isOn: $account.isClosed)
-                TextField("Notes", text: $account.notes, axis: .vertical)
+                TextField("Notes", text: Binding(
+                    get: { account.notes ?? "" },
+                    set: { account.notes = $0.isEmpty ? nil : $0 }
+                ), axis: .vertical)
                     .lineLimit(4...)
             }
             .formStyle(.grouped)
