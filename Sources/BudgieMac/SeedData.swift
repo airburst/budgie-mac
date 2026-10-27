@@ -29,12 +29,20 @@ enum SeedData {
     }
 
     static func insert(into context: ModelContext) {
-        let household = Category(name: "Household")
-        let groceries = Category(name: "Groceries", parent: household)
-        let utilities = Category(name: "Utilities", parent: household)
-        let salary = Category(name: "Salary", kind: .income)
-        let eatingOut = Category(name: "Eating Out")
-        [household, groceries, utilities, salary, eatingOut].forEach(context.insert)
+        // Budgie's default tree, as a new user gets, plus a few of the user's own.
+        DefaultCategories.seedIfEmpty(context)
+        let existing = (try? context.fetch(FetchDescriptor<Category>())) ?? []
+        func category(_ name: String, kind: CategoryKind = .expense, parent: Category? = nil) -> Category {
+            if let found = existing.first(where: { $0.name == name && $0.parent === parent }) { return found }
+            let made = Category(name: name, kind: kind, parent: parent)
+            context.insert(made)
+            return made
+        }
+        let household = category("Household")
+        let groceries = category("Groceries", parent: household)
+        let utilities = category("Utilities", parent: household)
+        let salary = category("Salary", kind: .income)
+        let eatingOut = category("Eating Out")
 
         let current = Account(name: "Everyday Current", openingBalance: money("1200"))
         current.number = "12344321"

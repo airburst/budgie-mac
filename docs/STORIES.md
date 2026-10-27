@@ -225,7 +225,7 @@ Acceptance:
 - [snap] Parents show their number of sub-categories, and children are indented under their parent.
 - [unit] A search keeps a match's parent visible for context.
 - [unit] A first launch with no data seeds Budgie's default category tree.
-Status: todo
+Status: done
 
 ### S-016 Add a category or sub-category
 As the user, I add a top-level category or a sub-category under a parent, and choose Expense, Income or Transfer.

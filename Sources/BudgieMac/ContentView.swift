@@ -23,6 +23,8 @@ struct ContentView: View {
         .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)
+            // S-015: a first launch with no data gets Budgie's default categories.
+            if DefaultCategories.seedIfEmpty(model.container.mainContext) > 0 { try? model.container.mainContext.save() }
             SelfTest.runIfRequested(model: model)
             Snapshot.runIfRequested(model: model, openSettings: openSettings)
         }
@@ -32,6 +34,8 @@ struct ContentView: View {
         switch model.sidebar ?? .page(.accounts) {
         case .page(.accounts):
             AccountsPage()
+        case .page(.categories):
+            CategoriesPage()
         case .page(let page):
             ContentUnavailableView(page.title, systemImage: page.symbol)
                 .navigationTitle(page.title)
