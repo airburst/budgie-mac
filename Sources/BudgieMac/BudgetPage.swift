@@ -102,7 +102,7 @@ private struct EnvelopeHeader: View {
             Text("Assigned").frame(width: 100, alignment: .trailing)
             Text("Spent of Available").frame(minWidth: 120, alignment: .leading)
             Text("Spent").frame(width: 100, alignment: .trailing)
-            Text("Available").frame(width: 110, alignment: .trailing)
+            Text("Available").frame(width: 112, alignment: .trailing)
         }
         .font(.callout)
         .foregroundStyle(.secondary)
@@ -175,7 +175,7 @@ private struct EnvelopeRow: View {
                 .help("Spent in \(Budget.title(of: month))")
             MoneyText(amount: line.available, currency: currency)
                 .fontWeight(.semibold)
-                .frame(width: 110, alignment: .trailing)
+                .frame(width: 112, alignment: .trailing)
                 .help("Available: rolled over \(Money.string(line.rolledOver, currency: currency)), moved in \(Money.string(line.movedIn, currency: currency)), moved out \(Money.string(line.movedOut, currency: currency))")
         }
         .padding(.vertical, Space.xs)
