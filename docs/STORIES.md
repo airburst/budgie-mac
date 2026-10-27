@@ -132,7 +132,7 @@ UX:
 - States: editing a reconciled transaction shows an inline warning at the top: "This transaction is reconciled. Changing the amount or account will unbalance the reconciliation of 22 Sep 2026."; editing one half of a transfer shows "Changes also apply to the matching transfer in Rainy Day Saver."
 - Words: title "Edit Transaction"; buttons "Save" (default) and "Cancel"; closing with edits asks nothing, because Cancel is intentional and ⌘Z covers mistakes after Save
 - Access: same as S-006
-Status: todo
+Status: done
 
 ### S-008 Delete a transaction
 As the user, I select a transaction and press Delete, confirm, and it is gone.

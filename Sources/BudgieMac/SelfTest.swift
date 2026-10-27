@@ -71,6 +71,19 @@ enum SelfTest {
             check("Undo is named Undo Add Transaction", undoAdd.undoActionName == "Add Transaction")
             undoAdd.undo()
             check("undoing Add Transaction removes it", wallet.balance == 0)
+            // S-007: changing the amount updates the running balance and the account totals.
+            if let kept = try? model.addTransaction(spend, to: wallet, undoManager: nil) {
+                var change = TransactionDraft(kept)
+                change.withdrawal = "10"
+                let undoEdit = UndoManager()
+                try? model.edit(kept, with: change, undoManager: undoEdit)
+                let rows = Register.rows(Register.fetch(wallet, in: context), openingBalance: wallet.openingBalance)
+                check("editing the amount updates the running balance", rows.last?.balance == -10)
+                check("editing the amount updates the account total", Money.totals([wallet]).first?.amount == -10)
+                undoEdit.undo()
+                check("Undo Edit Transaction puts the amount back", kept.amount == Decimal(string: "-3.40")!)
+                context.delete(kept)
+            }
             spend.withdrawal = ""
             check("an empty amount is refused", (try? model.addTransaction(spend, to: wallet, undoManager: nil)) == nil)
 

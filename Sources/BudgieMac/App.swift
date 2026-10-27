@@ -43,6 +43,11 @@ struct BudgieMacApp: App {
                 Button("New Account…") { model.isAddingAccount = true }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
             }
+            CommandMenu("Transaction") {
+                Button("Edit Transaction…") { model.editSelectedTransaction() }
+                    .keyboardShortcut("e")
+                    .disabled(!model.canEditTransaction)
+            }
             CommandGroup(after: .newItem) {
                 Divider()
                 Button("Import Budgie Data…") { model.importFlow.chooseFile() }

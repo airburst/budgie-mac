@@ -83,6 +83,15 @@ struct RegisterPage: View {
             }
             .width(min: 100, ideal: 110)
         }
+        .contextMenu(forSelectionType: RegisterRow.ID.self) { ids in
+            if ids.count == 1, let id = ids.first {
+                Button("Edit Transaction…") { model.transactionSheet = .edit(id) }
+                    .keyboardShortcut("e")
+            }
+        } primaryAction: { ids in
+            // Double-click or Return edits.
+            if ids.count == 1, let id = ids.first { model.transactionSheet = .edit(id) }
+        }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {

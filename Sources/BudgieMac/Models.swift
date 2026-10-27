@@ -90,6 +90,13 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
+    /// Transaction > Edit Transaction… (⌘E) for the one selected row.
+    var canEditTransaction: Bool { openAccount != nil && selectedTransactions.count == 1 }
+
+    func editSelectedTransaction() {
+        if canEditTransaction, let id = selectedTransactions.first { transactionSheet = .edit(id) }
+    }
+
     /// File > New Transaction (⌘N), the toolbar +, or the empty state.
     func newTransaction() {
         if let openAccount { transactionSheet = .add(account: openAccount) }

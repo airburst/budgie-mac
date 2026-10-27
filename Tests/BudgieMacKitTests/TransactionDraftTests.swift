@@ -82,3 +82,35 @@ struct TransactionDraftTests {
         #expect(draft.isFarFromToday)
     }
 }
+
+/// S-007: editing one half of a transfer updates the other half.
+@MainActor
+@Suite("Transfers")
+struct TransferTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+
+    @Test("Editing one half of a transfer updates the other")
+    func syncsPartner() throws {
+        let current = Account(name: "Current"), saver = Account(name: "Saver")
+        context.insert(current)
+        context.insert(saver)
+        let out = Transaction(account: current, date: Day.parse("2026-09-01")!, payee: "To Saver", amount: -100)
+        let into = Transaction(account: saver, date: Day.parse("2026-09-01")!, payee: "From Current", amount: 100)
+        out.transferUUID = into.uuid
+        into.transferUUID = out.uuid
+        into.cleared = true
+        context.insert(out)
+        context.insert(into)
+
+        var draft = TransactionDraft(out, locale: Locale(identifier: "en_GB"))
+        draft.withdrawal = "250"
+        draft.date = Day.parse("2026-09-02")!
+        try draft.apply(to: out, in: context, locale: Locale(identifier: "en_GB"))
+        Transfers.syncPartner(of: out, in: context)
+
+        #expect(into.amount == 250 && Day.string(into.date) == "2026-09-02")
+        #expect(into.payee == "From Current" && into.cleared)
+        #expect(current.balance == -250 && saver.balance == 250)
+    }
+}

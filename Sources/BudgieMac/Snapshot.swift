@@ -60,6 +60,14 @@ enum Snapshot {
                         capture(to: "\(dir)/add-transaction-\(mode).png", withSheet: true)
                         model.transactionSheet = nil
                         try? await Task.sleep(for: .seconds(0.5))
+                        // A reconciled transaction, to show the edit warning.
+                        if let reconciled = current.transactions.first(where: \.reconciled) {
+                            model.transactionSheet = .edit(reconciled.persistentModelID)
+                            try? await Task.sleep(for: .seconds(1))
+                            capture(to: "\(dir)/edit-transaction-\(mode).png", withSheet: true)
+                            model.transactionSheet = nil
+                            try? await Task.sleep(for: .seconds(0.5))
+                        }
                     }
                 }
             }

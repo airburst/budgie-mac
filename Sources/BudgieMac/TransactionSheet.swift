@@ -30,6 +30,9 @@ struct TransactionSheet: View {
 
     var body: some View {
         Form {
+            if let editing {
+                EditWarnings(transaction: editing)
+            }
             Section {
                 DatePicker("Date", selection: $draft.date, displayedComponents: .date)
                     // Days are stored at midnight UTC; show them in UTC so they never shift.
@@ -107,4 +110,30 @@ struct TransactionSheet: View {
             problem = error
         } catch {}
     }
+}
+
+/// S-007: what else an edit changes, shown at the top of the sheet.
+private struct EditWarnings: View {
+    let transaction: Transaction
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        let reconciledOn = transaction.reconciled ? transaction.account?.lastReconciled : nil
+        let partner = Transfers.partner(of: transaction, in: context)
+        if reconciledOn != nil || partner != nil {
+            Section {
+                if let reconciledOn {
+                    Label("This transaction is reconciled. Changing the amount or account will unbalance the reconciliation of \(reconciledOn.formatted(Self.day)).",
+                          systemImage: "lock")
+                }
+                if let name = partner?.account?.name {
+                    Label("Changes also apply to the matching transfer in \(name).", systemImage: "arrow.left.arrow.right")
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private static let day = Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: TimeZone(identifier: "UTC")!)
 }
