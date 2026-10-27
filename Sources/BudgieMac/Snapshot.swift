@@ -10,7 +10,7 @@ import SwiftUI
 /// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
 /// APP_SNAPSHOT_PAGES=accounts,budget limits the pages. Add "settings" to include Settings,
-/// "import" for the import confirmation and banner.
+/// "import" for the import confirmation and banner, "add-account" for the Add Account sheet.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
@@ -39,6 +39,16 @@ enum Snapshot {
                     model.sidebar = .page(page)
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                }
+            }
+            if only == nil || only?.contains("add-account") == true {
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    model.isAddingAccount = true
+                    try? await Task.sleep(for: .seconds(1))
+                    capture(to: "\(dir)/add-account-\(mode).png", withSheet: true)
+                    model.isAddingAccount = false
+                    try? await Task.sleep(for: .seconds(0.5))
                 }
             }
             if only == nil || only?.contains("import") == true {

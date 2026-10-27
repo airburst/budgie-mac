@@ -25,6 +25,15 @@ struct Sidebar: View {
                 ForEach(SidebarItem.allCases.filter { $0 != .accounts }) { pageRow($0) }
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack {
+                Button("Add Account", systemImage: "plus") { model.isAddingAccount = true }
+                    .buttonStyle(.borderless)
+                    .help("Add an account (⇧⌘N)")
+                Spacer()
+            }
+            .padding(Space.md)
+        }
     }
 
     private func pageRow(_ page: SidebarItem) -> some View {

@@ -79,7 +79,7 @@ struct AccountsPage: View {
         } description: {
             Text("Add an account to start tracking your money, or bring everything over from Budgie.")
         } actions: {
-            Button("Add Account…") { model.addAccount() }
+            Button("Add Account…") { model.isAddingAccount = true }
                 .buttonStyle(.borderedProminent)
             Button("Import from Budgie…") { model.importFlow.chooseFile() }
         }

@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SwiftData
 import BudgieMacKit
 
@@ -79,9 +80,23 @@ final class AppModel {
         self.container = container
     }
 
-    func addAccount(name: String = "") {
-        let account = Account(name: AccountName.clean(name))
-        container.mainContext.insert(account)
+    /// Shows the Add Account sheet (S-004).
+    var isAddingAccount = false
+
+    /// Adds the account, opens it, and offers "Undo Add Account".
+    @discardableResult
+    func add(_ draft: AccountDraft, undoManager: UndoManager?) -> Account {
+        let account = draft.makeAccount()
+        let context = container.mainContext
+        context.insert(account)
+        try? context.save()
         sidebar = .account(account.uuid)
+        undoManager?.registerUndo(withTarget: self) { model in
+            if model.sidebar == .account(account.uuid) { model.sidebar = .page(.accounts) }
+            context.delete(account)
+            try? context.save()
+        }
+        undoManager?.setActionName("Add Account")
+        return account
     }
 }

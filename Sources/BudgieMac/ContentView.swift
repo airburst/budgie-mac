@@ -13,6 +13,10 @@ struct ContentView: View {
         } detail: {
             detail
         }
+        .sheet(isPresented: Bindable(model).isAddingAccount) {
+            // No .noInitialFocus(): this sheet opens with focus in Name (S-004).
+            NavigationStack { AddAccountSheet() }
+        }
         .modifier(ImportFlowModifier())
         .task {
             SeedData.insertIfRequested(into: model)

@@ -29,12 +29,21 @@ enum SelfTest {
             func accounts() -> [Account] { (try? context.fetch(FetchDescriptor<Account>())) ?? [] }
 
             let before = accounts().count
-            model.addAccount()
-            check("New Account adds one account", accounts().count == before + 1)
-            let added = accounts().first { model.sidebar == .account($0.uuid) }
-            check("the new account is selected", added != nil)
+            var draft = AccountDraft(currency: "GBP")
+            check("Add Account is disabled until Name is filled", !draft.canAdd())
+            draft.name = "Self-test Account"
+            check("Add Account is enabled once Name is filled", draft.canAdd())
+            let undo = UndoManager()
+            model.add(draft, undoManager: undo)
+            check("Add Account adds one account", accounts().count == before + 1)
+            check("the new account is selected", accounts().contains { model.sidebar == .account($0.uuid) })
 
-            if let account = added {
+            check("Undo is named Undo Add Account", undo.undoActionName == "Add Account")
+            undo.undo()
+            check("undoing Add Account removes it", accounts().count == before)
+            model.add(draft, undoManager: nil)
+
+            if let account = accounts().first(where: { model.sidebar == .account($0.uuid) }) {
                 // S-001: a transaction survives a reload of the store.
                 let transaction = Transaction(account: account, payee: "Corner Grocer", amount: Decimal(string: "-70.20")!)
                 context.insert(transaction)

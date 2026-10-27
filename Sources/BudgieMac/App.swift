@@ -37,8 +37,8 @@ struct BudgieMacApp: App {
             }
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {
-                Button("New Account") { model.addAccount() }
-                    .keyboardShortcut("n")
+                Button("New Account…") { model.isAddingAccount = true }
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
             }
             CommandGroup(after: .newItem) {
                 Divider()

@@ -81,7 +81,7 @@ UX:
 - States: Type defaults to Bank and Currency to the Mac's region (GBP); Opening balance defaults to 0.00; Credit Card shows Credit limit; Interest rate is optional for every type; inline note under Name "Another account is already called "Wallet"." (a warning only: adding is still allowed); a footnote under Opening balance "Type and opening balance can't be changed after adding."
 - Words: title "Add Account"; labels "Name", "Type", "Account Number (optional)", "Opening Balance", "Currency", "Credit Limit", "Interest Rate (%)"; buttons "Add Account" (default) and "Cancel"; + tooltip "Add an account (⇧⌘N)"
 - Access: Tab moves in label order; Type is a pop-up button that can be chosen by typing; every field has a VoiceOver label that matches its visible label
-Status: todo
+Status: done
 
 ### S-005 Open an account's register
 As the user, I select an account in the sidebar and see its transactions with a running balance.
