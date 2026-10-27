@@ -51,6 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
         if SelfTest.requested { exit(SelfTest.exitCode) }
+        // S-054: back up on quit.
+        AppModel.current?.backUp()
     }
 }
 

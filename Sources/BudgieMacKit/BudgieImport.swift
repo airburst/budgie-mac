@@ -90,18 +90,23 @@ public enum BudgieImport {
         }
     }
 
+    /// Deletes row by row: a batch delete (`delete(model:)`) is refused by
+    /// Core Data when related rows exist, such as allocations for an envelope.
     static func deleteEverything(in context: ModelContext) throws {
-        try context.delete(model: BudgetTransfer.self)
-        try context.delete(model: BudgetAllocation.self)
-        try context.delete(model: EnvelopeCategory.self)
-        try context.delete(model: Envelope.self)
-        try context.delete(model: Payee.self)
-        try context.delete(model: ScheduledTransaction.self)
-        try context.delete(model: AccountReconciliation.self)
-        try context.delete(model: Transaction.self)
-        try context.delete(model: Category.self)
-        try context.delete(model: Account.self)
-        try context.delete(model: Preferences.self)
+        func deleteAll<T: PersistentModel>(_ type: T.Type) throws {
+            for row in try context.fetch(FetchDescriptor<T>()) { context.delete(row) }
+        }
+        try deleteAll(BudgetTransfer.self)
+        try deleteAll(BudgetAllocation.self)
+        try deleteAll(EnvelopeCategory.self)
+        try deleteAll(Envelope.self)
+        try deleteAll(Payee.self)
+        try deleteAll(ScheduledTransaction.self)
+        try deleteAll(AccountReconciliation.self)
+        try deleteAll(Transaction.self)
+        try deleteAll(Category.self)
+        try deleteAll(Account.self)
+        try deleteAll(Preferences.self)
     }
 
     // Rows with `deletedAt` are Budgie's sync tombstones: rows already removed

@@ -14,6 +14,8 @@ import SwiftUI
 /// "register" for the Everyday Current and credit card registers and the Add Transaction sheet.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
+    static var requested: Bool { ProcessInfo.processInfo.environment["APP_SNAPSHOT"].map { !$0.isEmpty } ?? false }
+
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }

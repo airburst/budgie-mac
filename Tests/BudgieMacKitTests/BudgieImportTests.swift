@@ -104,6 +104,20 @@ struct BudgieImportTests {
         #expect(try all(Account.self).count == 4)
     }
 
+    @Test("Importing over a full store on disk replaces everything, budget included")
+    func replacesFullStore() throws {
+        let url = URL.temporaryDirectory.appending(path: "import-\(UUID()).store")
+        let container = try BudgieSchema.container(url: url)
+        let context = container.mainContext
+        try BudgieImport.replaceAll(in: context, with: BudgieImport.read(Self.fixture))
+        try context.save()
+        // Again, over the data the first import left (envelopes, allocations, transfers…).
+        let summary = try BudgieImport.replaceAll(in: context, with: BudgieImport.read(Self.fixture))
+        #expect(summary.budgetAllocations == 2)
+        #expect(try context.fetchCount(FetchDescriptor<BudgetAllocation>()) == 2)
+        #expect(try context.fetchCount(FetchDescriptor<Transaction>()) == 6)
+    }
+
     @Test("An unsupported format version is refused with a message naming the version")
     func newerVersion() throws {
         let text = String(decoding: Self.fixture, as: UTF8.self).replacingOccurrences(of: "\"formatVersion\":1", with: "\"formatVersion\":2")

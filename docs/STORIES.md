@@ -563,7 +563,7 @@ Depends: S-049, S-052
 Acceptance:
 - [snap] The Shortcuts tab lists the built-in shortcuts and my account shortcuts, with record and remove.
 - [unit] A shortcut that clashes with a menu shortcut is refused.
-Status: todo
+Status: done (account shortcuts are ⌃ + key, listed under View)
 
 ### S-051 Find a transaction by searching
 As the user, I press ⌘F in a register and type to filter by payee, category, notes or amount.
@@ -581,7 +581,7 @@ Depends: S-001
 Acceptance:
 - [snap] General pane: Appearance (System, Light, Dark), Open on launch (pages and accounts), "Fill in category and amount from payee".
 - [unit] Every preference persists and applies at once.
-Status: todo
+Status: done
 
 ### S-053 Export my data
 As the user, I export everything to a file that Budgie or BudgieMac can import.
@@ -600,7 +600,7 @@ Acceptance:
 - [unit] A backup is written on quit; backups older than the retention period (default 30 days) are deleted.
 - [snap] The Backups pane shows the folder, retention, Back Up Now and a list of backups to restore.
 - [self] Restoring asks for confirmation, then reloads the data without needing a relaunch.
-Status: todo
+Status: done
 
 ### S-055 Import transactions from a QIF file
 As the user, I choose File > Import QIF…, review the rows with duplicates flagged, and import the ones I tick.

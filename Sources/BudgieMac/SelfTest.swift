@@ -250,6 +250,36 @@ enum SelfTest {
 
             check("account names are cleaned", AccountName.clean("  Joint   Account ") == "Joint Account")
 
+            // S-052: preferences persist and apply at once.
+            model.preferences.appearance = .dark
+            model.applyAppearance()
+            check("Dark appearance applies at once", NSApp.appearance?.name == .darkAqua)
+            model.preferences.appearance = .system
+            model.applyAppearance()
+            check("System appearance follows the Mac", NSApp.appearance == nil)
+            model.preferences.startupPage = "budget"
+            model.openStartPage()
+            check("the start page opens", model.sidebar == .page(.budget))
+            model.preferences.startupPage = nil
+
+            // S-050: an account shortcut that clashes with a menu shortcut is refused.
+            check("⌘N can't open an account", Shortcuts.problem(with: KeyShortcut("n", .command, "x")) != nil)
+            model.setShortcut(AccountShortcut(key: "9", ctrl: true, accountUUID: wallet.uuid), for: wallet.uuid)
+            check("an account shortcut is saved", model.preferences.accountShortcuts.contains { $0.accountUUID == wallet.uuid })
+            model.setShortcut(nil, for: wallet.uuid)
+
+            // S-054: restore replaces the data with a backup, without a relaunch.
+            let folder = URL(fileURLWithPath: "/tmp/BudgieMac-selftest-backups", isDirectory: true)
+            try? FileManager.default.removeItem(at: folder)
+            if let backup = try? Backups.write(BudgieExport.data(from: context), to: folder) {
+                let count = (try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0
+                _ = try? model.addTransaction(spend.with(withdrawal: "1"), to: wallet, undoManager: nil)
+                let restored = try? model.restoreNow(backup)
+                check("restoring a backup brings the data back", restored != nil
+                      && ((try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0) == count)
+                check("backups are listed newest first", Backups.list(folder).first?.url.lastPathComponent == backup.lastPathComponent)
+            }
+
             // S-049: the menu bar has every shortcut, and items that can't apply are off.
             model.sidebar = .page(.accounts)
             model.selectedTransactions = []

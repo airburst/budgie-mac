@@ -35,3 +35,9 @@ Symptom: `#expect(total == 4000 - 700 - 50)` failed while `#expect(total == 3250
 Cause: an arithmetic expression of integer literals beside a `Decimal` in `#expect` doesn't type-check the way it reads (it isn't evaluated as Decimal arithmetic).
 Fix: write the expected amount as one literal, or build it with `Decimal(string:)`.
 Rule: in tests, never compare a `Decimal` with arithmetic on bare literals; write the expected value out.
+
+## Importing or restoring over existing budget data failed (found by the S-054 self-test)
+Symptom: restoring a backup left the data unchanged; Core Data logged "Batch delete failed due to mandatory OTO nullify inverse on BudgetAllocation/envelope". The same path is S-002's import, so importing a Budgie file over a BudgieMac with envelopes would also have failed.
+Cause: `BudgieImport.deleteEverything` used `context.delete(model:)`, a store-level batch delete that Core Data refuses when related rows exist. The S-002 unit test only replaced a lone account in memory.
+Fix: delete row by row through the context; a regression test imports twice over a full store on disk.
+Rule: never use `ModelContext.delete(model:)` on models with relationships; test replace-all paths on a full store on disk.

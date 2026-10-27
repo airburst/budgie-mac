@@ -41,7 +41,11 @@ struct AppCommands: Commands {
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
             }
             Divider()
+            AccountShortcutCommands(model: model)
+                .modelContainer(model.container)
+            Divider()
             RegisterFilterCommands(model: model)
+                .modelContainer(model.container)
             Divider()
         }
 

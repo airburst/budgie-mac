@@ -76,8 +76,12 @@ final class AppModel {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
     }
 
+    /// The app's one model, for the app delegate's quit backup.
+    nonisolated(unsafe) static weak var current: AppModel?
+
     init(container: ModelContainer) {
         self.container = container
+        AppModel.current = self
     }
 
     /// The selected rows in the open register.

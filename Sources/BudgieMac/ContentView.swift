@@ -33,6 +33,11 @@ struct ContentView: View {
             if DefaultCategories.seedIfEmpty(model.container.mainContext) > 0 { try? model.container.mainContext.save() }
             // S-033: auto-post scheduled transactions that are due.
             model.autoPostScheduled()
+            // S-052: the chosen appearance and start page.
+            if !Snapshot.requested {
+                model.applyAppearance()
+                if !SelfTest.requested { model.openStartPage() }
+            }
             SelfTest.runIfRequested(model: model)
             Snapshot.runIfRequested(model: model, openSettings: openSettings)
         }
