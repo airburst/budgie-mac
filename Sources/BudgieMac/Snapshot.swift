@@ -67,6 +67,14 @@ enum Snapshot {
                             capture(to: "\(dir)/edit-transaction-\(mode).png", withSheet: true)
                             model.transactionSheet = nil
                             try? await Task.sleep(for: .seconds(0.5))
+                            // S-008: deleting it asks first. Cancel closes the alert.
+                            model.selectedTransactions = [reconciled.persistentModelID]
+                            model.deleteSelectedTransactions(undoManager: nil)
+                            try? await Task.sleep(for: .seconds(1))
+                            capture(to: "\(dir)/delete-reconciled-\(mode).png", withSheet: true)
+                            for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet, returnCode: .alertFirstButtonReturn) } }
+                            model.selectedTransactions = []
+                            try? await Task.sleep(for: .seconds(0.5))
                         }
                     }
                 }

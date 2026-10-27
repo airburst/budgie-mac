@@ -56,8 +56,7 @@ final class ImportFlow {
     /// An NSAlert, because a SwiftUI alert makes the destructive button the
     /// default. Here Cancel is first and the default, so Return never replaces data.
     func confirm(_ request: Pending, in model: AppModel) {
-        guard let window = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true })
-                ?? NSApp.mainWindow else { return }
+        guard let window = NSApp.mainAppWindow else { return }
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Replace All Data with This Budgie File?"

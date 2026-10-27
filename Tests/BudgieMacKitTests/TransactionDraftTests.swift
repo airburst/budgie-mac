@@ -114,3 +114,38 @@ struct TransferTests {
         #expect(current.balance == -250 && saver.balance == 250)
     }
 }
+
+/// S-008: deleting transactions.
+@MainActor
+@Suite("Deletion")
+struct DeletionTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+
+    @Test("Deleting one half of a transfer deletes both, and restoring brings both back linked")
+    func transferPair() throws {
+        let current = Account(name: "Current"), saver = Account(name: "Saver")
+        context.insert(current)
+        context.insert(saver)
+        let out = Transaction(account: current, payee: "To Saver", amount: -100)
+        let into = Transaction(account: saver, payee: "From Current", amount: 100)
+        out.transferUUID = into.uuid
+        into.transferUUID = out.uuid
+        let other = Transaction(account: current, payee: "Shop", amount: -5)
+        [out, into, other].forEach(context.insert)
+        try context.save()
+        let outUUID = out.uuid
+
+        let records = TransactionDeletion.delete([out], in: context)
+        try context.save()
+        #expect(records.count == 2)
+        #expect(try context.fetchCount(FetchDescriptor<Transaction>()) == 1)
+        #expect(current.balance == -5 && saver.balance == 0)
+
+        TransactionDeletion.restore(records, in: context)
+        try context.save()
+        let restored = try #require(try context.fetch(FetchDescriptor<Transaction>(predicate: #Predicate { $0.uuid == outUUID })).first)
+        #expect(Transfers.partner(of: restored, in: context)?.account?.name == "Saver")
+        #expect(current.balance == -105 && saver.balance == 100)
+    }
+}

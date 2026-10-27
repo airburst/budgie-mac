@@ -148,7 +148,7 @@ UX:
 - States: confirmation title "Delete the Reconciled Transaction "Corner Grocer", 10 Aug 2026, -£70.20?" with the message "This changes the reconciled balance of Everyday Current."; for several rows: "Delete 3 Transactions, Including 1 Reconciled?"
 - Words: buttons "Delete" (destructive) and "Cancel" (default); menu item "Delete"
 - Access: the Delete key works whenever the table has focus; VoiceOver announces "3 transactions deleted"
-Status: todo
+Status: done
 
 ### S-009 Mark a transaction as cleared
 As the user, I click the cleared checkbox on a row (or press Space with the row selected) and its status changes.

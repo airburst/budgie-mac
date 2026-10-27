@@ -6,6 +6,7 @@ import SwiftUI
 /// subtitle its balances; transactions oldest first with a running balance.
 struct RegisterPage: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Query private var accounts: [Account]
     @Query private var transactions: [Transaction]
 
@@ -88,10 +89,19 @@ struct RegisterPage: View {
                 Button("Edit Transaction…") { model.transactionSheet = .edit(id) }
                     .keyboardShortcut("e")
             }
+            if !ids.isEmpty {
+                Divider()
+                Button("Delete", role: .destructive) {
+                    model.selectedTransactions = ids
+                    model.deleteSelectedTransactions(undoManager: undoManager)
+                }
+            }
         } primaryAction: { ids in
             // Double-click or Return edits.
             if ids.count == 1, let id = ids.first { model.transactionSheet = .edit(id) }
         }
+        // The Delete key and Edit > Delete.
+        .onDeleteCommand { model.deleteSelectedTransactions(undoManager: undoManager) }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {

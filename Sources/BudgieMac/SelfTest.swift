@@ -84,6 +84,18 @@ enum SelfTest {
                 check("Undo Edit Transaction puts the amount back", kept.amount == Decimal(string: "-3.40")!)
                 context.delete(kept)
             }
+            // S-008: deleting asks nothing and Undo restores it.
+            if let doomed = try? model.addTransaction(spend, to: wallet, undoManager: nil) {
+                let undoDelete = UndoManager()
+                model.selectedTransactions = [doomed.persistentModelID]
+                model.deleteSelectedTransactions(undoManager: undoDelete)
+                check("deleting an unreconciled transaction asks nothing", wallet.balance == 0)
+                check("Undo is named Undo Delete Transaction", undoDelete.undoActionName == "Delete Transaction")
+                undoDelete.undo()
+                check("Undo Delete Transaction restores it", wallet.balance == Decimal(string: "-3.40")!)
+                for transaction in wallet.transactions { context.delete(transaction) }
+                try? context.save()
+            }
             spend.withdrawal = ""
             check("an empty amount is refused", (try? model.addTransaction(spend, to: wallet, undoManager: nil)) == nil)
 
