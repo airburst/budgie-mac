@@ -635,7 +635,7 @@ As the user, I choose BudgieMac > About and see the version with a link to the c
 Screens: 61-about.png
 Acceptance:
 - [snap] The standard About panel shows the version, build number and a link to the changelog.
-Status: todo
+Status: done (Help > What's New opens the changelog too)
 
 ### S-059 Recognise the app in the Dock
 As the user, BudgieMac has its own icon, not Budgie's.

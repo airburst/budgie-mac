@@ -243,6 +243,17 @@ enum Snapshot {
             if only == nil || only?.contains("import") == true {
                 await captureImport(model: model, dir: dir)
             }
+            if only == nil || only?.contains("about") == true {
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    AboutPanel.show()
+                    try? await Task.sleep(for: .seconds(1))
+                    if let panel = NSApp.windows.first(where: { $0.isVisible && !$0.canBecomeMain && !$0.isSheet && $0.frame.width < 600 }) {
+                        capture(to: "\(dir)/about-\(mode).png", window: panel)
+                        panel.close()
+                    }
+                }
+            }
             if only == nil || only?.contains("settings") == true {
                 let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
                 openSettings()

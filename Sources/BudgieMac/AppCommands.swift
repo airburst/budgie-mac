@@ -11,6 +11,14 @@ struct AppCommands: Commands {
         SidebarCommands()
         ToolbarCommands()
 
+        // S-058: the standard About panel, with a link to what's new.
+        CommandGroup(replacing: .appInfo) {
+            Button("About BudgieMac") { AboutPanel.show() }
+        }
+        CommandGroup(replacing: .help) {
+            Button("What's New in BudgieMac") { AboutPanel.openChangelog() }
+        }
+
         CommandGroup(replacing: .newItem) {
             Button("New Transaction") { model.newTransaction() }
                 .keyboardShortcut("n")
