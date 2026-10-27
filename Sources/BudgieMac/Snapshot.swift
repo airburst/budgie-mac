@@ -123,6 +123,19 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("forecast") == true {
+                let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
+                if let current = open.first(where: { $0.name == "Everyday Current" }) {
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        model.sidebar = .account(current.uuid)
+                        model.forecastFor = current.uuid
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/forecast-\(mode).png")
+                        model.forecastFor = nil
+                    }
+                }
+            }
             if only == nil || only?.contains("reconcile") == true {
                 // M3: the Reconcile… sheet, then the reconcile page with a pending statement.
                 let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []

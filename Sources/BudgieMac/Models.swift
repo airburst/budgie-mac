@@ -93,6 +93,9 @@ final class AppModel {
     /// The Add or Edit Scheduled Transaction sheet, when open (S-026).
     var scheduleSheet: ScheduleSheetMode?
 
+    /// The account whose forecast replaces its register (S-034).
+    var forecastFor: UUID?
+
     /// Reconcile… sheet for an account (S-021).
     var reconcileSheet: ReconcileTarget?
     /// The reconcile page's ticked rows, for the account in `reconcileFor`.

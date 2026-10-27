@@ -409,7 +409,7 @@ Acceptance:
 - [unit] Projections start at each schedule's stored next due date (Fixes: forecast ignores the stored next due date).
 - [unit] Transfers into the account count as deposits.
 - [unit] The end date defaults to three months ahead and can be changed.
-Status: todo
+Status: done
 
 ### S-035 Try out a forecast without changing data
 As the user, I untick projected rows to see the balance without them, and look at a row's details.
@@ -419,7 +419,7 @@ Acceptance:
 - [unit] Excluding a row changes later projected balances only, never stored data.
 - [snap] Row details show date, amount, projected balance, status, source, category and memo.
 - [snap] Help explains the chart and the include toggles (hover help or a help popover).
-Status: todo
+Status: done
 
 ## M5 Budget: envelopes
 
