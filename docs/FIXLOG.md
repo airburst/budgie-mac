@@ -17,3 +17,9 @@ Symptom: All Accounts formatted Last Reconciled in the local time zone; days are
 Cause: each screen built its own date format, and one forgot the UTC time zone.
 Fix: `Day.formatted(_:_:)` in BudgieMacKit is the only way days are shown.
 Rule: show stored days with `Day.formatted`, never `Date.formatted` directly.
+
+## Soft delete read back as false after a save (S-017)
+Symptom: deleting a category (or closing an account) set the flag, but after `context.save()` the property read `false` until the next fetch; the self-test caught it.
+Cause: the attribute was called `deleted`, which is also Core Data's own `NSManagedObject.deleted` key under SwiftData.
+Fix: renamed to `softDeleted` with `@Attribute(originalName: "deleted")` so existing stores migrate; a unit test reads it back after a save.
+Rule: never name a SwiftData attribute after an NSManagedObject property (`deleted`, `inserted`, `updated`, `faulted`, `entity`, `objectID`, `description`).

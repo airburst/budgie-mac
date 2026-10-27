@@ -166,8 +166,8 @@ struct SchemaTests {
         let food = Category(name: "Food"), old = Category(name: "Old")
         [kept, closed].forEach { context.insert($0) }
         [food, old].forEach { context.insert($0) }
-        closed.deleted = true
-        old.deleted = true
+        closed.softDeleted = true
+        old.softDeleted = true
         try context.save()
 
         let reopened = try reopen()
@@ -194,4 +194,18 @@ func dayFormatting() {
     var pacific = Date.FormatStyle(date: .numeric, time: .omitted, locale: uk)
     pacific.timeZone = TimeZone(identifier: "America/Los_Angeles")!
     #expect(day.formatted(pacific) == "21/09/2026")
+}
+
+/// The soft-delete flag must read back after a save (it once clashed with Core Data's `deleted`).
+@MainActor
+@Test("Soft delete reads back after a save")
+func softDeleteAfterSave() throws {
+    let container = try BudgieSchema.container(url: URL.temporaryDirectory.appending(path: "soft-\(UUID()).store"))
+    let context = container.mainContext
+    let account = Account(name: "A")
+    context.insert(account)
+    try context.save()
+    account.softDeleted = true
+    try context.save()
+    #expect(account.softDeleted)
 }

@@ -6,7 +6,7 @@ import SwiftUI
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
-    @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.name)
+    @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name)
     private var accounts: [Account]
 
     var body: some View {

@@ -58,7 +58,7 @@ struct BudgieImportTests {
         #expect(card.type == .creditCard && card.creditLimit == 3_000 && card.interestRate == Decimal(string: "22.9"))
         #expect(card.openingBalance == Decimal(string: "-250.75")!)
         #expect(accounts.first { $0.name == "Rainy Day Saver" }?.currency == "EUR")
-        #expect(accounts.first { $0.name == "Old Account" }?.deleted == true)
+        #expect(accounts.first { $0.name == "Old Account" }?.softDeleted == true)
 
         let grocer = try #require(current.transactions.first { $0.payee == "Corner Grocer" })
         #expect(grocer.amount == Decimal(string: "-70.2")!)
@@ -93,7 +93,7 @@ struct BudgieImportTests {
         let groceries = try #require(try all(Category.self).first { $0.name == "Groceries" })
         #expect(groceries.parent?.name == "Household")
         #expect(groceries.parent?.children.map(\.name) == ["Groceries"])
-        #expect(try all(Category.self).first { $0.name == "Old Hobby" }?.deleted == true)
+        #expect(try all(Category.self).first { $0.name == "Old Hobby" }?.softDeleted == true)
     }
 
     @Test("Importing replaces what was there")

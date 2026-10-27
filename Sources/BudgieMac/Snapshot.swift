@@ -86,6 +86,21 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("categories") == true {
+                // S-016: Add Sub-category under Food, with Transfer offered as a type.
+                let categories = (try? model.container.mainContext.fetch(Category.visibleCategories)) ?? []
+                if let food = categories.first(where: { $0.name == "Food" && $0.parent == nil }) {
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        model.sidebar = .page(.categories)
+                        model.categorySheet = .add(parent: food.persistentModelID)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/add-category-\(mode).png", withSheet: true)
+                        model.categorySheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                }
+            }
             if only == nil || only?.contains("add-account") == true {
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)

@@ -37,3 +37,69 @@ struct CategoryTests {
         #expect(CategoryTree.nodes(all).map(\.category.name) == ["Food", "Motoring"])
     }
 }
+
+/// S-016 and S-017.
+@MainActor
+@Suite("Category editing")
+struct CategoryEditingTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+
+    @Test("A sibling's name is refused, ignoring case; cousins may share it")
+    func duplicates() throws {
+        let food = try CategoryDraft(name: "Food").add(in: context)
+        var dup = CategoryDraft()
+        dup.name = "  food "
+        #expect(throws: CategoryDraft.Problem.duplicate("Food")) { try dup.add(in: context) }
+        var child = CategoryDraft(parent: food)
+        child.name = "Food"
+        #expect(try child.add(in: context).path == "Food > Food")
+        #expect(throws: CategoryDraft.Problem.noName) { try CategoryDraft().add(in: context) }
+    }
+
+    @Test("Transfer is a type you can choose, and children start with their parent's type")
+    func transferKind() throws {
+        var draft = CategoryDraft(name: "Moves")
+        draft.kind = .transfer
+        let moves = try draft.add(in: context)
+        #expect(moves.kind == .transfer)
+        #expect(CategoryDraft(parent: moves).kind == .transfer)
+    }
+
+    @Test("Renaming checks siblings but not itself")
+    func rename() throws {
+        let a = try CategoryDraft(name: "A").add(in: context)
+        try CategoryDraft(name: "B").add(in: context)
+        var draft = CategoryDraft(a)
+        draft.name = "a"
+        try draft.apply(to: a, in: context)
+        #expect(a.name == "a")
+        draft.name = "b"
+        #expect(throws: CategoryDraft.Problem.duplicate("B")) { try draft.apply(to: a, in: context) }
+    }
+
+    @Test("A parent with children can't be deleted; a used category leaves its transactions uncategorised")
+    func deletion() throws {
+        let parent = try CategoryDraft(name: "Food").add(in: context)
+        let child = try CategoryDraft(name: "Takeaway", parent: parent).add(in: context)
+        #expect(CategoryDeletion.blocked(parent) != nil)
+        #expect(CategoryDeletion.blocked(child) == nil)
+        let account = Account(name: "Bank")
+        context.insert(account)
+        let meal = Transaction(account: account, payee: "Noodles", amount: -10, category: child)
+        context.insert(meal)
+        #expect(CategoryDeletion.usage(child) == 1)
+        let lost = CategoryDeletion.delete(child)
+        #expect(meal.category == nil && child.softDeleted && lost.count == 1)
+        #expect(CategoryDeletion.blocked(parent) == nil)
+        CategoryDeletion.restore(child, to: lost)
+        #expect(meal.category === child && !child.softDeleted)
+    }
+}
+
+extension CategoryDraft {
+    fileprivate init(name: String, parent: Category? = nil) {
+        self.init(parent: parent)
+        self.name = name
+    }
+}

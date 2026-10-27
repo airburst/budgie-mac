@@ -28,7 +28,9 @@ public final class Account {
     public var interestRate: Decimal?
     public var creditLimit: Decimal?
     /// Soft delete: hidden from lists, kept for history. Budgie's "closed".
-    public var deleted: Bool = false
+    /// Not called `deleted`: that is Core Data's own key, and it reads back
+    /// false after a save (docs/FIXLOG.md).
+    @Attribute(originalName: "deleted") public var softDeleted: Bool = false
     public var createdAt: Date = Date.now
     public var updatedAt: Date?
     public var pendingReconcileBalance: Decimal?
@@ -59,7 +61,8 @@ public final class Category {
     public var uuid: UUID = UUID()
     public var name: String = ""
     public var kindRaw: String = CategoryKind.expense.rawValue
-    public var deleted: Bool = false
+    /// See Account.softDeleted for why this isn't called `deleted`.
+    @Attribute(originalName: "deleted") public var softDeleted: Bool = false
     public var createdAt: Date = Date.now
     public var updatedAt: Date?
 
@@ -322,13 +325,13 @@ public enum Day {
 // Lists hide soft-deleted rows.
 public extension Account {
     static var openAccounts: FetchDescriptor<Account> {
-        FetchDescriptor(predicate: #Predicate { !$0.deleted }, sortBy: [SortDescriptor(\.name)])
+        FetchDescriptor(predicate: #Predicate { !$0.softDeleted }, sortBy: [SortDescriptor(\.name)])
     }
 }
 
 public extension Category {
     static var visibleCategories: FetchDescriptor<Category> {
-        FetchDescriptor(predicate: #Predicate { !$0.deleted }, sortBy: [SortDescriptor(\.name)])
+        FetchDescriptor(predicate: #Predicate { !$0.softDeleted }, sortBy: [SortDescriptor(\.name)])
     }
 }
 

@@ -118,7 +118,7 @@ public enum BudgieImport {
             account.notes = row.notes
             account.interestRate = row.interestRate.map(money)
             account.creditLimit = row.creditLimit.map(money)
-            account.deleted = row.deleted
+            account.softDeleted = row.deleted
             account.pendingReconcileBalance = row.pendingReconcileBalance.map(money)
             account.pendingReconcileDate = row.pendingReconcileDate.flatMap(Day.parse)
             stamp(account, row, \.createdAt, \.updatedAt)
@@ -132,7 +132,7 @@ public enum BudgieImport {
         for row in liveCategories {
             let category = Category(name: row.name, kind: CategoryKind(rawValue: row.expenseType) ?? .expense)
             category.uuid = uuid(row.publicId)
-            category.deleted = row.deleted
+            category.softDeleted = row.deleted
             stamp(category, row, \.createdAt, \.updatedAt)
             context.insert(category)
             categories[row.publicId] = category

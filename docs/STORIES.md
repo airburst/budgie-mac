@@ -234,7 +234,7 @@ Depends: S-015
 Acceptance:
 - [snap] The Type choice offers Expense, Income and Transfer (Fixes: no Transfer type in the form).
 - [unit] A name that matches a sibling's (ignoring case) is refused (Fixes: duplicate category names allowed).
-Status: todo
+Status: done
 
 ### S-017 Rename or delete a category
 As the user, I edit a category's name and type, or delete it.
@@ -243,7 +243,7 @@ Depends: S-015
 Acceptance:
 - [snap] Delete is turned off for a parent with children, and its help text says why.
 - [unit] Deleting a category used by transactions asks for confirmation; those transactions become uncategorised.
-Status: todo
+Status: done
 
 ### S-018 Browse and search payees
 As the user, I open Payees and see each payee with its default category and amount.

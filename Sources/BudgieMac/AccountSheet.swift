@@ -18,7 +18,7 @@ struct AccountSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.undoManager) private var undoManager
-    @Query(filter: #Predicate<Account> { !$0.deleted }) private var accounts: [Account]
+    @Query(filter: #Predicate<Account> { !$0.softDeleted }) private var accounts: [Account]
     @State private var draft = AccountDraft()
     @State private var loaded = false
     @FocusState private var nameFocused: Bool

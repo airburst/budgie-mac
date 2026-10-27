@@ -7,7 +7,7 @@ public enum Suggestions {
     /// Parents can be picked too, as in Budgie.
     public static func categories(_ categories: [Category], matching text: String) -> [Category] {
         let text = text.trimmingCharacters(in: .whitespaces)
-        let live = categories.filter { !$0.deleted }
+        let live = categories.filter { !$0.softDeleted }
         let matches = text.isEmpty ? live : live.filter { $0.path.localizedStandardContains(text) }
         return matches.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
     }
@@ -16,7 +16,7 @@ public enum Suggestions {
     public static func category(named text: String, in categories: [Category]) -> Category? {
         let text = text.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return nil }
-        let live = categories.filter { !$0.deleted }
+        let live = categories.filter { !$0.softDeleted }
         return live.first { $0.path.caseInsensitiveCompare(text) == .orderedSame }
             ?? live.first { $0.name.caseInsensitiveCompare(text) == .orderedSame }
     }

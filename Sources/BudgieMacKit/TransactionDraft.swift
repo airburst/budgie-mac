@@ -78,7 +78,7 @@ public struct TransactionDraft {
             // Budgie files transfers under "Transfer > <account name>"; keep that when those categories exist.
             let categories = (try? context.fetch(FetchDescriptor<Category>())) ?? []
             func transferCategory(_ name: String) -> Category? {
-                categories.first { $0.kind == .transfer && $0.parent != nil && !$0.deleted && $0.name == name }
+                categories.first { $0.kind == .transfer && $0.parent != nil && !$0.softDeleted && $0.name == name }
             }
             if transaction.category == nil { transaction.category = transferCategory(other.name) }
             partner.category = transferCategory(account.name)

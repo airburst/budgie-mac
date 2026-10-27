@@ -106,7 +106,7 @@ struct EditAccountTests {
         let open = Account(name: "Open", openingBalance: 10), shut = Account(name: "Shut", openingBalance: 5)
         [open, shut].forEach(context.insert)
         context.insert(Transaction(account: shut, date: Day.parse("2025-01-01")!, payee: "Old", amount: 20))
-        shut.deleted = true
+        shut.softDeleted = true
         try context.save()
         let listed = try context.fetch(Account.openAccounts)
         #expect(Money.totals(listed, localCurrency: "GBP") == [Money.Total(currency: "GBP", amount: 10)])

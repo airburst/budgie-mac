@@ -52,7 +52,7 @@ extension AppModel {
 
     /// Closes or reopens without asking (the confirmation's action, and the self-test).
     func setClosed(_ account: Account, _ closed: Bool, undoManager: UndoManager?) {
-        account.deleted = closed
+        account.softDeleted = closed
         account.updatedAt = .now
         if closed, sidebar == .account(account.uuid) { sidebar = .page(.accounts) }
         try? container.mainContext.save()

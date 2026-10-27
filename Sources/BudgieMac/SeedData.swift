@@ -56,7 +56,7 @@ enum SeedData {
         let wallet = Account(name: "Wallet", type: .cash, openingBalance: money("60"))
         let euro = Account(name: "Euro Account", openingBalance: money("420"), currency: "EUR")
         let closed = Account(name: "Old Current Account", openingBalance: money("12"))
-        closed.deleted = true
+        closed.softDeleted = true
         [current, card, saver, loan, isa, wallet, euro, closed].forEach(context.insert)
 
         // (account, days ago, payee, amount, category, cleared, reconciled)

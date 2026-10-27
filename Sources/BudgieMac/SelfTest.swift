@@ -54,7 +54,7 @@ enum SelfTest {
                 check("a saved transaction is there after reloading the store",
                       found?.payee == "Corner Grocer" && found?.amount == Decimal(string: "-70.20")! && found?.account?.uuid == account.uuid)
 
-                account.deleted = true
+                account.softDeleted = true
                 try? context.save()
                 let open = (try? context.fetch(Account.openAccounts)) ?? []
                 check("deleting an account hides it from lists", !open.contains { $0.uuid == account.uuid })
@@ -125,7 +125,20 @@ enum SelfTest {
             let openNow = (try? context.fetch(Account.openAccounts)) ?? []
             check("a closed account leaves the sidebar", !openNow.contains { $0.uuid == wallet.uuid })
             undoAccount.undo()
-            check("Undo Close Account reopens it", !wallet.deleted)
+            check("Undo Close Account reopens it", !wallet.softDeleted)
+
+            // S-016 and S-017: add, refuse a duplicate, delete with Undo.
+            let undoCategory = UndoManager()
+            var newCategory = CategoryDraft()
+            newCategory.name = "Self-test Hobbies"
+            check("Add Category adds it", model.save(newCategory, editing: nil, undoManager: undoCategory))
+            check("a duplicate sibling name is refused", !model.save(newCategory, editing: nil, undoManager: nil))
+            if let hobbies = ((try? context.fetch(Category.visibleCategories)) ?? []).first(where: { $0.name == "Self-test Hobbies" }) {
+                model.setDeleted(hobbies, undoManager: undoCategory)
+                check("Delete Category hides it", hobbies.softDeleted)
+                undoCategory.undo()
+                check("Undo Delete Category brings it back", !hobbies.softDeleted)
+            }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")

@@ -96,7 +96,7 @@ public enum CategoryTree {
     /// Top-level categories with their children, by name. A search keeps a
     /// matching child's parent, so the match is seen in context.
     public static func nodes(_ categories: [Category], search: String = "") -> [Node] {
-        let live = categories.filter { !$0.deleted }
+        let live = categories.filter { !$0.softDeleted }
         let text = search.trimmingCharacters(in: .whitespaces)
         func matches(_ category: Category) -> Bool { text.isEmpty || category.name.localizedStandardContains(text) }
         func byName(_ a: Category, _ b: Category) -> Bool { a.name.localizedStandardCompare(b.name) == .orderedAscending }
@@ -111,5 +111,5 @@ public enum CategoryTree {
 
 public extension Category {
     /// Children still in use.
-    var liveChildren: [Category] { children.filter { !$0.deleted } }
+    var liveChildren: [Category] { children.filter { !$0.softDeleted } }
 }

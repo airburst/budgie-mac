@@ -19,7 +19,7 @@ struct SuggestionTests {
         let groceries = Category(name: "Groceries", parent: household)
         let gifts = Category(name: "Gifts")
         let gone = Category(name: "Grocery Old")
-        gone.deleted = true
+        gone.softDeleted = true
         let all = [household, groceries, gifts, gone]
         #expect(Suggestions.categories(all, matching: "gro").map(\.path) == ["Household > Groceries"])
         #expect(Suggestions.categories(all, matching: "house").map(\.path) == ["Household", "Household > Groceries"])

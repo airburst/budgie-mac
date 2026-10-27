@@ -90,6 +90,9 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
+    /// The Add or Edit Category sheet, when open (S-016, S-017).
+    var categorySheet: CategorySheetMode?
+
     /// The Add or Edit Account sheet, when open (S-004, S-010).
     var accountSheet: AccountSheetMode?
 }

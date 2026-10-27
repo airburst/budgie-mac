@@ -17,9 +17,9 @@ struct TransactionSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.undoManager) private var undoManager
-    @Query(filter: #Predicate<Category> { !$0.deleted }) private var categories: [Category]
+    @Query(filter: #Predicate<Category> { !$0.softDeleted }) private var categories: [Category]
     @Query private var payees: [Payee]
-    @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.name) private var accounts: [Account]
+    @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name) private var accounts: [Account]
     @Query private var preferences: [Preferences]
     @State private var draft = TransactionDraft()
     /// What's typed in Category; it becomes `draft.category` when it names one.
