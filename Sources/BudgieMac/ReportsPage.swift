@@ -299,9 +299,8 @@ private struct NetWorthCard: View {
     private func focus(at location: CGPoint, proxy: ChartProxy, geometry: GeometryProxy) {
         guard let frame = proxy.plotFrame.map({ geometry[$0] }) else { return }
         let x = location.x - frame.origin.x
-        model.netWorthFocus = points.min { a, b in
-            abs((proxy.position(forX: Budget.title(of: a.month)) ?? .infinity) - x) < abs((proxy.position(forX: Budget.title(of: b.month)) ?? .infinity) - x)
-        }?.month
+        let distance = { (point: Reports.NetWorthPoint) in abs((proxy.position(forX: Budget.title(of: point.month)) ?? .infinity) - x) } // grid: ok chart lookup, not layout
+        model.netWorthFocus = points.min { distance($0) < distance($1) }?.month
     }
 }
 
