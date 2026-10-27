@@ -41,3 +41,10 @@ Symptom: restoring a backup left the data unchanged; Core Data logged "Batch del
 Cause: `BudgieImport.deleteEverything` used `context.delete(model:)`, a store-level batch delete that Core Data refuses when related rows exist. The S-002 unit test only replaced a lone account in memory.
 Fix: delete row by row through the context; a regression test imports twice over a full store on disk.
 Rule: never use `ModelContext.delete(model:)` on models with relationships; test replace-all paths on a full store on disk.
+
+## Forecast counted future register entries as already paid (2026-10-27)
+
+Symptom: the forecast started from the account's full balance, so a register entry dated 20 Nov (-£1,799) lowered the line from today instead of on 20 Nov. It started £1,869 below Budgie's forecast for the same data.
+Cause: `ForecastView` started from `Account.balance`, which sums every transaction whatever its date, and listed only scheduled rows. Budgie starts from the opening balance plus transactions dated today or earlier, and adds later register entries as rows. It also skips scheduled dates on or before today.
+Fix: `Forecast.startBalance(of:today:)`, register rows dated after today in `Forecast.rows`, overdue schedule dates skipped, and a test with a future-dated entry.
+Rule: anything that projects balances forward starts from the balance as of today, never from `Account.balance`.

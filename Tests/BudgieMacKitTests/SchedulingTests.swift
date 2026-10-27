@@ -100,9 +100,9 @@ struct SchedulingTests {
         let toSaver = schedule("FREQ=MONTHLY;BYMONTHDAY=15", due: "2026-11-15", amount: -100, account: current)
         toSaver.transferToAccount = saver
         let end = day("2027-01-20")
-        let rows = Forecast.rows(for: current, schedules: [rent, toSaver], through: end)
+        let rows = Forecast.rows(for: current, schedules: [rent, toSaver], through: end, today: day("2026-10-27"))
         #expect(rows.map { Day.string($0.date) } == ["2026-11-15", "2026-12-01", "2026-12-15", "2027-01-01", "2027-01-15"])
-        let saverRows = Forecast.rows(for: saver, schedules: [rent, toSaver], through: end)
+        let saverRows = Forecast.rows(for: saver, schedules: [rent, toSaver], through: end, today: day("2026-10-27"))
         #expect(saverRows.allSatisfy { $0.amount == 100 } && saverRows.count == 3)
 
         let balances = Forecast.balances(rows, start: 1000)
@@ -110,7 +110,33 @@ struct SchedulingTests {
         let without = Forecast.balances(rows, start: 1000, excluded: [rows[1].id])
         #expect(without[rows[0].id] == 900 && without[rows[1].id] == 900 && without[rows.last!.id] == 1000 - 300 - 1150)
         #expect(rent.nextDueDate.map(Day.string) == "2026-12-01")
-        #expect(Day.string(Forecast.defaultEnd(today: day("2026-10-27"))) == "2027-01-27")
+        #expect(Day.string(Forecast.defaultEnd(today: day("2026-10-27"))) == "2027-01-31")
+    }
+
+    @Test("The forecast starts at today's balance and adds later register entries on their own day")
+    func forecastFutureTransactions() {
+        let today = day("2026-10-27")
+        let joint = Account(name: "Joint", openingBalance: 3000)
+        context.insert(joint)
+        context.insert(Transaction(account: joint, date: day("2026-10-01"), payee: "Shop", amount: -100))
+        context.insert(Transaction(account: joint, date: today, payee: "Pay", amount: 500))
+        context.insert(Transaction(account: joint, date: day("2026-11-20"), payee: "Holiday", amount: -1799))
+        let food = schedule("FREQ=WEEKLY", due: "2026-10-20", amount: -200, account: joint)
+
+        #expect(joint.balance == 1601)
+        #expect(Forecast.startBalance(of: joint, today: today) == 3400)
+        let rows = Forecast.rows(for: joint, schedules: [food], through: day("2026-11-30"), today: today)
+        #expect(rows.map { Day.string($0.date) } == ["2026-11-03", "2026-11-10", "2026-11-17", "2026-11-20", "2026-11-24"],
+                "Overdue dates are skipped, as Budgie does")
+        #expect(rows[3].payee == "Holiday" && !rows[3].isScheduled)
+        let balances = Forecast.balances(rows, start: 3400)
+        #expect(balances[rows[2].id] == 2800)
+        #expect(balances[rows[3].id] == 1001)
+
+        let points = Forecast.points(rows, balances: balances, start: 3400, today: today, end: day("2026-11-30"))
+        #expect(points.first == ForecastPoint(date: today, balance: 3400))
+        #expect(points.last == ForecastPoint(date: day("2026-11-30"), balance: 801))
+        #expect(points.count == 7)
     }
 
     @Test("A paused schedule is left out of the forecast")

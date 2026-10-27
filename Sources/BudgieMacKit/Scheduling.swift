@@ -125,6 +125,12 @@ public enum Scheduling {
 // MARK: - Forecast (S-034, S-035)
 
 public struct ForecastRow: Identifiable, Hashable, Sendable {
+    /// Where a row comes from: a schedule, or a register entry dated after today.
+    public enum Source: Hashable, Sendable {
+        case scheduled(PersistentIdentifier)
+        case transaction(PersistentIdentifier)
+    }
+
     public let id: String
     public let date: Date
     public let payee: String
@@ -133,33 +139,59 @@ public struct ForecastRow: Identifiable, Hashable, Sendable {
     public let categoryPath: String?
     public let notes: String?
     public let isTransfer: Bool
-    public let scheduleID: PersistentIdentifier
+    public let source: Source
+
+    public var isScheduled: Bool {
+        if case .scheduled = source { return true }
+        return false
+    }
+}
+
+/// The balance after one day of the forecast, for the chart.
+public struct ForecastPoint: Hashable, Sendable {
+    public let date: Date
+    public let balance: Decimal
 }
 
 public enum Forecast {
-    /// Three months ahead (S-034).
+    /// The end of the month three months ahead, as Budgie (S-034).
     public static func defaultEnd(today: Date = Day.today) -> Date {
-        Day.calendar.date(byAdding: .month, value: 3, to: today)!
+        let calendar = Day.calendar
+        let ahead = calendar.date(byAdding: .month, value: 3, to: today)!
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: ahead))!
+        return calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart)!
     }
 
-    /// Projected rows for one account from each schedule's stored next due date.
-    public static func rows(for account: Account, schedules: [ScheduledTransaction], through end: Date) -> [ForecastRow] {
-        var rows: [ForecastRow] = []
+    /// Where the forecast starts: the opening balance plus every transaction
+    /// dated today or earlier. Later entries come in as rows on their own day.
+    public static func startBalance(of account: Account, today: Date = Day.today) -> Decimal {
+        account.transactions.reduce(account.openingBalance) { $0 + ($1.date <= today ? $1.amount : 0) }
+    }
+
+    /// Projected rows for one account after today: register entries dated
+    /// after today, and each active schedule from its stored next due date.
+    public static func rows(for account: Account, schedules: [ScheduledTransaction], through end: Date,
+                            today: Date = Day.today) -> [ForecastRow] {
+        var rows: [ForecastRow] = account.transactions.filter { $0.date > today && $0.date <= end }.map { t in
+            ForecastRow(id: "real-\(t.uuid.uuidString)", date: t.date, payee: t.payee, amount: t.amount,
+                        categoryPath: t.category?.path, notes: t.notes, isTransfer: t.transferUUID != nil,
+                        source: .transaction(t.persistentModelID))
+        }
         for schedule in schedules {
             let outOf = schedule.account === account
             let into = schedule.transferToAccount === account && !outOf
             guard outOf || into else { continue }
             let amount = into ? -schedule.amount : schedule.amount
-            for date in schedule.occurrences(through: end) {
+            for date in schedule.occurrences(through: end) where date > today {
                 rows.append(ForecastRow(id: "\(schedule.uuid.uuidString)-\(Day.string(date))", date: date, payee: schedule.payee,
                                         amount: amount, categoryPath: schedule.category?.path, notes: schedule.notes,
-                                        isTransfer: schedule.transferToAccount != nil, scheduleID: schedule.persistentModelID))
+                                        isTransfer: schedule.transferToAccount != nil, source: .scheduled(schedule.persistentModelID)))
             }
         }
-        return rows.sorted { ($0.date, $0.payee) < ($1.date, $1.payee) }
+        return rows.sorted { ($0.date, $0.isScheduled ? 1 : 0, $0.payee) < ($1.date, $1.isScheduled ? 1 : 0, $1.payee) }
     }
 
-    /// The projected balance after each row, from the account's balance today.
+    /// The projected balance after each row, from the balance at the start.
     /// Excluded rows keep the balance before them and change nothing stored.
     public static func balances(_ rows: [ForecastRow], start: Decimal, excluded: Set<String> = []) -> [String: Decimal] {
         var balance = start
@@ -169,5 +201,19 @@ public enum Forecast {
             result[row.id] = balance
         }
         return result
+    }
+
+    /// One point for today, one per day with rows (the balance at the end of
+    /// that day), and one at the end date, so the line spans the whole range.
+    public static func points(_ rows: [ForecastRow], balances: [String: Decimal], start: Decimal,
+                              today: Date = Day.today, end: Date) -> [ForecastPoint] {
+        var points = [ForecastPoint(date: today, balance: start)]
+        for row in rows {
+            let balance = balances[row.id] ?? start
+            if points.last?.date == row.date { points.removeLast() }
+            points.append(ForecastPoint(date: row.date, balance: balance))
+        }
+        if let last = points.last, last.date < end { points.append(ForecastPoint(date: end, balance: last.balance)) }
+        return points
     }
 }

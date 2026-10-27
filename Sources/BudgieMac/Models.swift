@@ -111,6 +111,8 @@ final class AppModel {
 
     /// The account whose forecast replaces its register (S-034).
     var forecastFor: UUID?
+    /// The day the forecast chart reads out, set by hover or click; snapshot mode sets it too.
+    var forecastFocus: Date?
 
     /// Reconcile… sheet for an account (S-021).
     var reconcileSheet: ReconcileTarget?

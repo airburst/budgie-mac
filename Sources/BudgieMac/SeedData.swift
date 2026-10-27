@@ -71,6 +71,7 @@ enum SeedData {
             (current, 9, "Employer Ltd", "2345.67", salary, false, false),
             (current, 7, "Rent", "-1150", household, false, false),
             (current, 2, "Corner Grocer", "-81.02", groceries, false, false),
+            (current, -24, "Station Road Garage", "-480", nil, false, false),
             (card, 20, "Bookshop", "-18.99", nil, true, false),
             (card, 10, "The Noodle Bar", "-41.50", eatingOut, false, false),
             (card, 5, "Payment Received", "250.75", nil, true, false),

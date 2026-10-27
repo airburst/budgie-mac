@@ -178,6 +178,10 @@ enum Snapshot {
                         model.forecastFor = current.uuid
                         try? await Task.sleep(for: .seconds(1))
                         capture(to: "\(dir)/forecast-\(mode).png")
+                        // The hover readout, on the day of a future register entry.
+                        model.forecastFocus = Day.parse("2026-11-20")
+                        try? await Task.sleep(for: .seconds(0.5))
+                        capture(to: "\(dir)/forecast-focus-\(mode).png")
                         model.forecastFor = nil
                     }
                 }
