@@ -115,23 +115,39 @@ private struct ForecastChart: View {
         return points.last { $0.date <= day } ?? points.first
     }
 
+    /// As Net Worth: scaled to the data, but always showing zero.
+    private var domain: ClosedRange<Double> {
+        let values = points.map { Self.double($0.balance) }
+        let low = min(values.min() ?? 0, 0), high = max(values.max() ?? 0, 0)
+        let pad = max((high - low) * 0.15, abs(high) * 0.02, 1)
+        return (low - pad)...(high + pad)
+    }
+
     var body: some View {
+        let domain = domain
         Chart {
+            ForEach(points, id: \.date) { point in
+                // The same area and line as the Net Worth chart, stepped on each day.
+                AreaMark(x: .value("Date", point.date),
+                         yStart: .value("Base", domain.lowerBound),
+                         yEnd: .value("Balance", Self.double(point.balance)))
+                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(ChartColors.series[0].opacity(0.18))
+                LineMark(x: .value("Date", point.date), y: .value("Balance", Self.double(point.balance)))
+                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(ChartColors.series[0])
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+            }
             RuleMark(y: .value("Zero", 0))
                 .foregroundStyle(.secondary)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-            ForEach(points, id: \.date) { point in
-                LineMark(x: .value("Date", point.date), y: .value("Balance", Self.double(point.balance)))
-                    .interpolationMethod(.stepEnd)
-                    .foregroundStyle(Palette.accent)
-            }
             if let focused, let day = model.forecastFocus {
                 RuleMark(x: .value("Day", day))
                     .foregroundStyle(.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                 PointMark(x: .value("Day", day), y: .value("Balance", Self.double(focused.balance)))
-                    .symbolSize(64)
-                    .foregroundStyle(Palette.accent)
+                    .symbolSize(80)
+                    .foregroundStyle(ChartColors.series[0])
                     .annotation(position: .topTrailing, spacing: Space.xs,
                                 overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
                         VStack(alignment: .leading, spacing: 0) {
@@ -144,6 +160,7 @@ private struct ForecastChart: View {
                     }
             }
         }
+        .chartYScale(domain: domain)
         .chartXScale(domain: (points.first?.date ?? Day.today)...(points.last?.date ?? Day.today))
         .chartYAxis {
             AxisMarks { value in
