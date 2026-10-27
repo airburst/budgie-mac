@@ -85,6 +85,23 @@ enum SeedData {
             context.insert(transaction)
         }
         context.insert(AccountReconciliation(account: current, date: day(35), balance: money("3391.37")))
+        // Scheduled transactions: monthly, weekly transfer, yearly, paused, and one due this week.
+        func schedule(_ account: Account, _ payee: String, _ amount: String, _ rrule: String, due daysAhead: Int,
+                      category: Category? = nil, to other: Account? = nil, active: Bool = true) {
+            let scheduled = ScheduledTransaction(account: account, payee: payee, amount: money(amount), rrule: rrule)
+            scheduled.nextDueDate = day(-daysAhead)
+            scheduled.category = category
+            scheduled.transferToAccount = other
+            scheduled.active = active
+            context.insert(scheduled)
+        }
+        schedule(current, "Employer Ltd", "2345.67", "FREQ=MONTHLY;BYMONTHDAY=18", due: 22, category: salary)
+        schedule(current, "Rent", "-1150", "FREQ=MONTHLY;BYMONTHDAY=20", due: 24, category: household)
+        schedule(current, "Rainy Day Saver", "-200", "FREQ=WEEKLY;BYDAY=FR", due: 3, to: saver)
+        schedule(current, "Power Co", "-84.10", "FREQ=MONTHLY;BYMONTHDAY=28", due: 1, category: utilities)
+        schedule(card, "Gym Membership", "-35", "FREQ=MONTHLY;BYMONTHDAY=16", due: 20, active: false)
+        schedule(current, "Car Insurance", "-480", "FREQ=YEARLY", due: 60)
+
         // Payees with defaults, as saving those transactions would have made them.
         context.insert(Payee(name: "Corner Grocer", category: groceries, amount: money("-70.20")))
         context.insert(Payee(name: "Employer Ltd", category: salary, amount: money("2345.67")))

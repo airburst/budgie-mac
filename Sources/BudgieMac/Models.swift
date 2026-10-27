@@ -90,6 +90,9 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
+    /// The Add or Edit Scheduled Transaction sheet, when open (S-026).
+    var scheduleSheet: ScheduleSheetMode?
+
     /// Reconcile… sheet for an account (S-021).
     var reconcileSheet: ReconcileTarget?
     /// The reconcile page's ticked rows, for the account in `reconcileFor`.

@@ -166,6 +166,31 @@ enum SelfTest {
                 check("Finish reconciles and clears the pending statement", wallet.pendingReconcileDate == nil && wallet.lastReconciled != nil)
             }
 
+            // M4: add a schedule, record it, skip it, pause it.
+            var scheduleDraft = ScheduleDraft(account: wallet)
+            scheduleDraft.payee = "Self-test Subscription"
+            scheduleDraft.withdrawal = "9.99"
+            scheduleDraft.nextDue = Day.parse("2030-01-15")!
+            scheduleDraft.recurrence.frequency = .monthly
+            scheduleDraft.recurrence.monthDays = [15]
+            model.save(scheduleDraft, editing: nil, undoManager: nil)
+            let schedules = (try? context.fetch(FetchDescriptor<ScheduledTransaction>())) ?? []
+            if let subscription = schedules.first(where: { $0.payee == "Self-test Subscription" }) {
+                check("a new schedule shows its frequency", subscription.frequencyLabel == "Monthly")
+                let before = wallet.transactions.count
+                try? model.record(subscription, as: Scheduling.draft(for: subscription))
+                check("Record posts to the register and moves the due date on",
+                      wallet.transactions.count == before + 1 && subscription.nextDueDate.map(Day.string) == "2030-02-15")
+                Scheduling.skip(subscription, in: context)
+                check("Skip moves the due date on without recording", wallet.transactions.count == before + 1
+                      && subscription.nextDueDate.map(Day.string) == "2030-03-15")
+                model.setActive(subscription, false, undoManager: nil)
+                check("a paused schedule is left out of the 7-day summary",
+                      Scheduling.dueSoon([subscription], today: Day.parse("2030-03-12")!).count == 0)
+                context.delete(subscription)
+                try? context.save()
+            }
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

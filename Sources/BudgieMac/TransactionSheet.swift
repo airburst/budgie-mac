@@ -8,6 +8,8 @@ enum TransactionSheetMode: Identifiable, Hashable {
     case edit(PersistentIdentifier)
     /// S-023: Auto Balance, prefilled with the difference.
     case adjust(account: UUID, amount: Decimal)
+    /// S-028: Record a scheduled transaction, prefilled from it.
+    case record(PersistentIdentifier)
 
     var id: Self { self }
 }
@@ -118,13 +120,13 @@ struct TransactionSheet: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle(editing == nil ? "Add Transaction" : "Edit Transaction")
+        .navigationTitle(title)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(editing == nil ? "Add Transaction" : "Save", action: save)
+                Button(confirmTitle, action: save)
             }
         }
         .frame(width: 440)
@@ -133,6 +135,9 @@ struct TransactionSheet: View {
             guard !loaded else { return }
             loaded = true
             if let editing { draft = TransactionDraft(editing) }
+            if case .record(let id) = mode, let schedule = context.model(for: id) as? ScheduledTransaction {
+                draft = Scheduling.draft(for: schedule)
+            }
             if case .adjust(_, let amount) = mode {
                 draft.payee = "Reconciliation adjustment"
                 let text = abs(amount).formatted(.number.precision(.fractionLength(2)).grouping(.never))
@@ -144,9 +149,26 @@ struct TransactionSheet: View {
         }
     }
 
+    private var title: String {
+        switch mode {
+        case .add, .adjust: "Add Transaction"
+        case .edit: "Edit Transaction"
+        case .record: "Record Scheduled Transaction"
+        }
+    }
+
+    private var confirmTitle: String {
+        switch mode {
+        case .add, .adjust: "Add Transaction"
+        case .edit: "Save"
+        case .record: "Record"
+        }
+    }
+
     private var addingTo: UUID? {
         switch mode {
         case .add(let uuid), .adjust(let uuid, _): uuid
+        case .record(let id): (context.model(for: id) as? ScheduledTransaction)?.account?.uuid
         case .edit: nil
         }
     }
@@ -164,6 +186,9 @@ struct TransactionSheet: View {
             case .add(let uuid), .adjust(let uuid, _):
                 guard let account = try context.fetch(FetchDescriptor<Account>(predicate: #Predicate { $0.uuid == uuid })).first else { return }
                 try model.addTransaction(draft, to: account, undoManager: undoManager)
+            case .record(let id):
+                guard let schedule = context.model(for: id) as? ScheduledTransaction else { return }
+                try model.record(schedule, as: draft)
             case .edit:
                 guard let editing else { return }
                 try model.edit(editing, with: draft, undoManager: undoManager)

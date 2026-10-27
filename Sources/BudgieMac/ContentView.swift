@@ -28,6 +28,8 @@ struct ContentView: View {
             SeedData.insertIfRequested(into: model)
             // S-015: a first launch with no data gets Budgie's default categories.
             if DefaultCategories.seedIfEmpty(model.container.mainContext) > 0 { try? model.container.mainContext.save() }
+            // S-033: auto-post scheduled transactions that are due.
+            model.autoPostScheduled()
             SelfTest.runIfRequested(model: model)
             Snapshot.runIfRequested(model: model, openSettings: openSettings)
         }
@@ -41,6 +43,8 @@ struct ContentView: View {
             CategoriesPage()
         case .page(.payees):
             PayeesPage()
+        case .page(.scheduled):
+            ScheduledPage()
         case .page(let page):
             ContentUnavailableView(page.title, systemImage: page.symbol)
                 .navigationTitle(page.title)

@@ -26,7 +26,7 @@ struct BudgieMacApp: App {
                 .frame(minWidth: 760, minHeight: 480)
         }
         .modelContainer(model.container)
-        .defaultSize(width: 1100, height: 720)
+        .defaultSize(width: 1280, height: 800)
         .windowToolbarStyle(.unified)
         .commands {
             SidebarCommands()

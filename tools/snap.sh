@@ -10,6 +10,7 @@ shots=/tmp/BudgieMac-shots
 rm -rf ~/Library/Saved\ Application\ State/net.fairhursts.budgiemac.savedState
 # A saved sidebar width would make snapshots differ from run to run.
 defaults delete net.fairhursts.budgiemac "NSSplitView Subview Frames main, SidebarNavigationSplitView" 2>/dev/null
+defaults delete net.fairhursts.budgiemac "NSWindow Frame main" 2>/dev/null
 # Seed data only fills an empty store, so start from nothing.
 rm -f $store $store-shm $store-wal
 rm -rf $shots

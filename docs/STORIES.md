@@ -324,7 +324,7 @@ Acceptance:
 - [snap] Paused schedules are marked clearly.
 - [unit] The frequency label is worked out from the RRULE (Monthly, Every 2 weeks, Yearly …).
 - [snap] The page is called "Scheduled" and its items "scheduled transactions" everywhere (Fixes: "Subscriptions" vs "Scheduled Transactions" vs "Scheduled Payment").
-Status: todo
+Status: done
 
 ### S-026 Add a scheduled payment
 As the user, I set up a recurring payment or income with account, payee, category, amount, first date, frequency, day rules, end condition and auto-post.
@@ -334,7 +334,7 @@ Acceptance:
 - [snap] Weekly shows a weekday picker; monthly shows a 1–31 + Last day grid; the end condition is Never, On date or After N times.
 - [unit] The form writes a valid RFC 5545 RRULE, and it parses back into the same form state.
 - [unit] Picking a transfer sets the "to" account.
-Status: todo
+Status: done
 
 ### S-027 Edit, pause or resume a scheduled payment
 As the user, I change a schedule, or pause and resume it.
@@ -343,7 +343,7 @@ Depends: S-026
 Acceptance:
 - [snap] The form has an Active/Paused control (Fixes: no pause/resume control).
 - [unit] A paused schedule is left out of the forecast, auto-post and the 7-day summary.
-Status: todo
+Status: done
 
 ### S-028 Record a scheduled payment
 As the user, I record a due payment, adjust it if needed, and it posts to the register.
@@ -353,7 +353,7 @@ Acceptance:
 - [snap] The sheet is prefilled from the schedule; the date defaults to the due date.
 - [unit] Recording creates a transaction (or a transfer pair) and moves the next due date to the next occurrence.
 - [unit] Recording the final occurrence ends the schedule.
-Status: todo
+Status: done
 
 ### S-029 Skip a scheduled payment
 As the user, I skip one occurrence without recording anything.
@@ -362,7 +362,7 @@ Depends: S-026
 Acceptance:
 - [snap] The confirmation names the date being skipped and the next date.
 - [unit] Skipping moves the next due date on and creates no transaction.
-Status: todo
+Status: done
 
 ### S-030 Delete a scheduled payment
 As the user, I delete a schedule after confirming.
@@ -371,7 +371,7 @@ Depends: S-025
 Acceptance:
 - [snap] The confirmation names the schedule.
 - [unit] Transactions already recorded from it remain.
-Status: todo
+Status: done
 
 ### S-031 Filter and sort scheduled payments
 As the user, I show only some accounts and sort by next due, payee, amount or account.
@@ -380,7 +380,7 @@ Depends: S-025
 Acceptance:
 - [snap] View menu and toolbar offer the eight sort orders and an account filter.
 - [unit] Sort and filter are remembered between launches.
-Status: todo
+Status: done (sort and account filter are in the toolbar; a View menu copy comes with S-049)
 
 ### S-032 See what's due soon
 As the user, I see a month calendar with due dates marked and a "Due in next 7 days" summary.
@@ -389,7 +389,7 @@ Depends: S-025
 Acceptance:
 - [snap] Days with a due payment show a dot; clicking a day selects its schedules.
 - [unit] The 7-day income, outgoing and count include only active schedules due from today up to 7 days ahead.
-Status: todo
+Status: done
 
 ### S-033 Post scheduled payments automatically
 As the user, schedules marked auto-post record themselves N days before they are due when I open the app.
@@ -398,7 +398,7 @@ Depends: S-028
 Acceptance:
 - [unit] At launch every active auto-post schedule due within its days-in-advance window is recorded once, including any missed occurrences.
 - [unit] Running it twice posts nothing twice.
-Status: todo
+Status: done
 
 ### S-034 Forecast an account's balance
 As the user, I open Forecast on an account and see a chart and list of its projected balance up to an end date.

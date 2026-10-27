@@ -101,6 +101,28 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("scheduled") == true {
+                // M4: Edit Scheduled Transaction (monthly), and Record for the transfer.
+                let schedules = (try? model.container.mainContext.fetch(FetchDescriptor<ScheduledTransaction>())) ?? []
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    model.sidebar = .page(.scheduled)
+                    if let rent = schedules.first(where: { $0.payee == "Rent" }) {
+                        model.scheduleSheet = .edit(rent.persistentModelID)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/edit-schedule-\(mode).png", withSheet: true)
+                        model.scheduleSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                    if let saver = schedules.first(where: { $0.transferToAccount != nil }) {
+                        model.transactionSheet = .record(saver.persistentModelID)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/record-schedule-\(mode).png", withSheet: true)
+                        model.transactionSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                }
+            }
             if only == nil || only?.contains("reconcile") == true {
                 // M3: the Reconcile… sheet, then the reconcile page with a pending statement.
                 let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
