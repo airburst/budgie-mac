@@ -620,7 +620,7 @@ Screens: 01-home-empty.png, 04-scheduled-empty.png, 06-payees-empty.png, 03-repo
 Depends: S-003
 Acceptance:
 - [snap] Accounts, register, Scheduled, Payees and Reports each have an empty state with one primary action.
-Status: todo
+Status: done (APP_SEED=0 SHOTS=/tmp/BudgieMac-empty tools/snap.sh shows a fresh install)
 
 ### S-057 Use the app in dark mode
 As the user, every page reads well in dark mode.
@@ -628,7 +628,7 @@ Screens: 70-dark-home.png, 71-dark-register.png, 72-dark-scheduled.png, 73-dark-
 Depends: S-052
 Acceptance:
 - [snap] Every snapshot page is checked in light and dark mode; money colours meet 4.5:1 contrast in both.
-Status: todo
+Status: done (money colours measured at 4.5:1 or better on every surface in both modes)
 
 ### S-058 See the version and what's new
 As the user, I choose BudgieMac > About and see the version with a link to the changelog.

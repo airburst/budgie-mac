@@ -7,6 +7,7 @@ import SwiftUI
 /// M6: spending by category, income vs expenses, net worth, and summary
 /// figures, for a period and a set of accounts.
 struct ReportsPage: View {
+    @Environment(AppModel.self) private var model
     @Query private var transactions: [Transaction]
     @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name) private var accounts: [Account]
     @AppStorage("reports.period") private var period: Reports.Period = .last90
@@ -14,6 +15,22 @@ struct ReportsPage: View {
     private let currency = Locale.current.currency?.identifier ?? "GBP"
 
     var body: some View {
+        if transactions.isEmpty {
+            ContentUnavailableView {
+                Label("No Reports Yet", systemImage: "chart.bar")
+            } description: {
+                Text("Reports appear once your accounts have transactions. Add an account, or bring your data over from Budgie.")
+            } actions: {
+                Button("Import from Budgie…") { model.importFlow.chooseFile() }
+                    .buttonStyle(.borderedProminent)
+            }
+            .navigationTitle("Reports")
+        } else {
+            report
+        }
+    }
+
+    @ViewBuilder private var report: some View {
         let range = period.range()
         let shownAccounts = chosen.isEmpty ? accounts : accounts.filter { chosen.contains($0.uuid) }
         let rows = Reports.transactions(transactions, in: range, accounts: chosen, currency: currency)
@@ -70,16 +87,11 @@ struct ReportsPage: View {
 /// dark, validated with its script. Slot order is fixed; Other is neutral.
 enum ChartColors {
     static let series: [Color] = [
-        dynamic(0x2a78d6, 0x3987e5), dynamic(0xeb6834, 0xd95926), dynamic(0x1baf7a, 0x199e70),
-        dynamic(0xeda100, 0xc98500), dynamic(0xe87ba4, 0xd55181),
+        Palette.dynamic(light: 0x2a78d6, dark: 0x3987e5), Palette.dynamic(light: 0xeb6834, dark: 0xd95926),
+        Palette.dynamic(light: 0x1baf7a, dark: 0x199e70), Palette.dynamic(light: 0xeda100, dark: 0xc98500),
+        Palette.dynamic(light: 0xe87ba4, dark: 0xd55181),
     ]
     static let other = Color.gray
-
-    static func dynamic(_ light: UInt32, _ dark: UInt32) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            NSColor(hex: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light)
-        })
-    }
 }
 
 /// A chart card with a title and a Show Values switch to a table.

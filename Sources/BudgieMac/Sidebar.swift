@@ -13,13 +13,15 @@ struct Sidebar: View {
         @Bindable var model = model
         List(selection: $model.sidebar) {
             pageRow(.accounts)
-            Section("Accounts") {
-                ForEach(accounts) { account in
+            if !accounts.isEmpty {
+                Section("Accounts") {
+                    ForEach(accounts) { account in
                     SidebarAccountRow(account: account)
                         .tag(SidebarSelection.account(account.uuid))
                         .contextMenu {
                             AccountMenuItems(account: account, undoManager: undoManager)
                         }
+                    }
                 }
             }
             Section {

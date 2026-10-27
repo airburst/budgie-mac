@@ -96,9 +96,17 @@ enum Palette {
     static var accent: Color { ThemeStore.shared.theme.accent }
     static var accentText: Color { ThemeStore.shared.theme.accentText }
     static var onAccent: Color { ThemeStore.shared.theme.onAccent }
-    /// Kept from Budgie: green for money in, red for money out. Always paired with a sign.
-    static let moneyIn = Color.green
-    static let moneyOut = Color.red
+    /// Kept from Budgie: green for money in, red for money out. Always paired
+    /// with a sign. Stepped per mode so both reach 4.5:1 on every surface the
+    /// app draws money on (S-057): light #16692f / #b42318, dark #4cc764 / #ff857c.
+    static let moneyIn = dynamic(light: 0x16692f, dark: 0x4cc764)
+    static let moneyOut = dynamic(light: 0xb42318, dark: 0xff857c)
+
+    static func dynamic(light: UInt32, dark: UInt32) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            NSColor(hex: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light)
+        })
+    }
 }
 
 extension View {
