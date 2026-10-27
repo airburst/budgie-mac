@@ -126,7 +126,8 @@ extension AppModel {
 
     /// "Mark as Cleared" when any selected row is uncleared, else "Mark as Uncleared".
     var clearingTitle: String {
-        Clearing.willClear(selectedTransactionRows) ? "Mark as Cleared" : "Mark as Uncleared"
+        let rows = selectedTransactionRows
+        return rows.isEmpty || Clearing.willClear(rows) ? "Mark as Cleared" : "Mark as Uncleared"
     }
 
     func toggleCleared(_ transactions: [Transaction], undoManager: UndoManager?) {

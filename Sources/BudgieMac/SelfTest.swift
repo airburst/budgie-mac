@@ -250,6 +250,25 @@ enum SelfTest {
 
             check("account names are cleaned", AccountName.clean("  Joint   Account ") == "Joint Account")
 
+            // S-049: the menu bar has every shortcut, and items that can't apply are off.
+            model.sidebar = .page(.accounts)
+            model.selectedTransactions = []
+            try? await Task.sleep(for: .seconds(0.5))
+            func items(_ menu: NSMenu?) -> [NSMenuItem] {
+                (menu?.items ?? []).flatMap { [$0] + items($0.submenu) }
+            }
+            let menuItems = items(NSApp.mainMenu)
+            func item(_ title: String) -> NSMenuItem? { menuItems.first { $0.title == title } }
+            for shortcut in Shortcuts.builtIn where !["Undo", "Redo", "Close Window", "Quit", "Hide", "Minimize", "Settings…", "Previous Month", "Next Month"].contains(shortcut.title) {
+                let title = shortcut.title == "Find" ? "Find in Register" : shortcut.title
+                let found = item(title)
+                check("menu has \(title) \(shortcut.symbols)", found?.keyEquivalent.lowercased() == shortcut.key,
+                      "found \(found.map { "'\($0.keyEquivalent)'" } ?? "nothing")")
+            }
+            for title in ["New Transaction", "Reconcile…", "Forecast", "Edit Transaction…", "Delete Transaction", "Mark as Cleared"] {
+                check("\(title) is off with no account open", item(title)?.isEnabled == false)
+            }
+
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }

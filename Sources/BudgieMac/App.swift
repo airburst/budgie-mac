@@ -28,41 +28,7 @@ struct BudgieMacApp: App {
         .modelContainer(model.container)
         .defaultSize(width: 1280, height: 800)
         .windowToolbarStyle(.unified)
-        .commands {
-            SidebarCommands()
-            CommandGroup(before: .sidebar) {
-                Button("All Accounts") { model.sidebar = .page(.accounts) }
-                    .keyboardShortcut("1")
-                Divider()
-            }
-            ToolbarCommands()
-            CommandGroup(replacing: .newItem) {
-                Button("New Transaction") { model.newTransaction() }
-                    .keyboardShortcut("n")
-                    .disabled(model.openAccount == nil)
-                Button("New Account…") { model.accountSheet = .add }
-                    .keyboardShortcut("n", modifiers: [.command, .shift])
-            }
-            CommandMenu("Account") {
-                AccountCommands(model: model)
-            }
-            CommandMenu("Transaction") {
-                Button("Edit Transaction…") { model.editSelectedTransaction() }
-                    .keyboardShortcut("e")
-                    .disabled(!model.canEditTransaction)
-                ClearingCommand(model: model)
-            }
-            CommandGroup(after: .newItem) {
-                Divider()
-                Button("Import Budgie Data…") { model.importFlow.chooseFile() }
-                    .keyboardShortcut("i", modifiers: [.command, .shift])
-                Button("Export Budgie Data…") { model.exportData() }
-                    .keyboardShortcut("e", modifiers: [.command, .shift])
-                Divider()
-                Button("Import QIF…") { model.chooseQifFile() }
-                    .keyboardShortcut("i", modifiers: [.command, .option])
-            }
-        }
+        .commands { AppCommands(model: model) }
 
         Settings {
             SettingsView()
@@ -110,17 +76,5 @@ enum Store {
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }
-    }
-}
-
-/// Transaction > Mark as Cleared (⌘K). Menus get the focused window's undo manager.
-private struct ClearingCommand: View {
-    let model: AppModel
-    @Environment(\.undoManager) private var undoManager
-
-    var body: some View {
-        Button(model.clearingTitle) { model.toggleCleared(model.selectedTransactionRows, undoManager: undoManager) }
-            .keyboardShortcut("k")
-            .disabled(model.openAccount == nil || model.selectedTransactionRows.allSatisfy(\.reconciled))
     }
 }

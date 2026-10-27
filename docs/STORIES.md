@@ -554,7 +554,7 @@ Acceptance:
 - [snap] File: New Transaction ⌘N, New Account ⇧⌘N, Import Budgie Data…, Export Budgie Data…, Import QIF… Edit: Undo/Redo, Delete. View: All Accounts ⌘1, Scheduled ⌘2, Budget ⌘3, Reports ⌘4, Categories, Payees, register filters. Account: Reconcile… ⌘R, Forecast ⇧⌘F, Edit Account…, Close Account…. Transaction: Edit Transaction… ⌘E, Mark as Cleared/Uncleared ⌘K, Delete ⌫. Window and Help as standard.
 - [self] Every menu item is turned off when it can't apply (for example Reconcile with no account selected).
 - [unit] The Budgie single-key shortcuts (A, S, B, F, R) are replaced by these and listed in GLOSSARY.
-Status: todo
+Status: done (Delete in the Transaction menu is ⌘⌫, because a plain ⌫ menu shortcut would steal backspace from text fields; plain ⌫ deletes in the register)
 
 ### S-050 Jump to an account with my own shortcut
 As the user, I assign a key to an account in Settings and press it to open that account.

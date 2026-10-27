@@ -90,8 +90,12 @@ struct AccountCommands: View {
         .keyboardShortcut("e", modifiers: [.command, .option])
         .disabled(model.openAccount == nil)
         Button("Reconcile…") { model.reconcileSheet = model.openAccount.map(ReconcileTarget.init) }
-            .keyboardShortcut("r", modifiers: [.command, .option])
+            .keyboardShortcut("r")
+            .disabled(model.openAccount == nil || model.menuAccount?.pendingReconcileDate != nil)
+        Button("Forecast") { model.forecastFor = model.openAccount }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
             .disabled(model.openAccount == nil)
+        Divider()
         Button("Close Account…") {
             if let account = model.menuAccount { model.closeAccount(account, undoManager: undoManager) }
         }
