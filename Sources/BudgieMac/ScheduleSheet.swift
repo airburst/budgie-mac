@@ -145,12 +145,16 @@ struct RecurrenceFields: View {
                             ForEach(1...7, id: \.self) { column in
                                 let day = row * 7 + column
                                 if day <= 31 {
-                                    Toggle("\(day)", isOn: member(of: \.monthDays, day))
-                                        .toggleStyle(.button)
-                                        .monospacedDigit()
+                                    // Labels fill the column, so 1 to 9 are as wide as 10 to 31.
+                                    Toggle(isOn: member(of: \.monthDays, day)) {
+                                        Text("\(day)").monospacedDigit().frame(maxWidth: .infinity)
+                                    }
+                                    .toggleStyle(.button)
                                 } else if day == 32 {
-                                    Toggle("Last Day", isOn: member(of: \.monthDays, -1))
-                                        .toggleStyle(.button)
+                                    Toggle(isOn: member(of: \.monthDays, -1)) {
+                                        Text("Last Day").frame(maxWidth: .infinity)
+                                    }
+                                    .toggleStyle(.button)
                                         .gridCellColumns(4)
                                 }
                             }
