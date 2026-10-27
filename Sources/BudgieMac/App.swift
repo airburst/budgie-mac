@@ -40,8 +40,11 @@ struct BudgieMacApp: App {
                 Button("New Transaction") { model.newTransaction() }
                     .keyboardShortcut("n")
                     .disabled(model.openAccount == nil)
-                Button("New Account…") { model.isAddingAccount = true }
+                Button("New Account…") { model.accountSheet = .add }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
+            }
+            CommandMenu("Account") {
+                AccountCommands(model: model)
             }
             CommandMenu("Transaction") {
                 Button("Edit Transaction…") { model.editSelectedTransaction() }

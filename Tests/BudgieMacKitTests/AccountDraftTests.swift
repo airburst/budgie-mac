@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import BudgieMacKit
 
@@ -72,5 +73,44 @@ struct AccountDraftTests {
         #expect(draft.duplicateName(among: ["Wallet", "Bank"]) == "wallet")
         draft.name = "Purse"
         #expect(draft.duplicateName(among: ["Wallet"]) == nil)
+    }
+}
+
+/// S-010: editing and closing an account.
+@MainActor
+@Suite("Edit account")
+struct EditAccountTests {
+    let container = try! BudgieSchema.inMemory()
+    var context: ModelContext { container.mainContext }
+    let uk = Locale(identifier: "en_GB")
+
+    @Test("Editing keeps the type and opening balance")
+    func fixedFields() {
+        let card = Account(name: "Card", type: .creditCard, openingBalance: -50)
+        card.creditLimit = 1_000
+        context.insert(card)
+        var draft = AccountDraft(card, locale: uk)
+        #expect(draft.creditLimit == "1000" && draft.openingBalance == "-50")
+        draft.name = "Rewards Card"
+        draft.type = .bank
+        draft.openingBalance = "999"
+        draft.creditLimit = "2500"
+        draft.number = "4321"
+        draft.apply(to: card, locale: uk)
+        #expect(card.name == "Rewards Card" && card.number == "4321" && card.creditLimit == 2_500)
+        #expect(card.type == .creditCard && card.openingBalance == -50)
+    }
+
+    @Test("A closed account is left out of totals but keeps its transactions")
+    func closed() throws {
+        let open = Account(name: "Open", openingBalance: 10), shut = Account(name: "Shut", openingBalance: 5)
+        [open, shut].forEach(context.insert)
+        context.insert(Transaction(account: shut, date: Day.parse("2025-01-01")!, payee: "Old", amount: 20))
+        shut.deleted = true
+        try context.save()
+        let listed = try context.fetch(Account.openAccounts)
+        #expect(Money.totals(listed, localCurrency: "GBP") == [Money.Total(currency: "GBP", amount: 10)])
+        let all = try context.fetch(FetchDescriptor<Transaction>())
+        #expect(all.count == 1 && all.first?.account === shut)
     }
 }

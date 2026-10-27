@@ -92,28 +92,18 @@ extension AppModel {
         undoManager?.setActionName(name)
     }
 
-    /// An NSAlert, so Cancel is the default and Return never deletes.
+    /// Asks first, with Cancel as the default (UI/Confirm.swift).
     private func confirmDelete(_ transactions: [Transaction], reconciled: [Transaction], undoManager: UndoManager?) {
-        guard let window = NSApp.mainAppWindow else { return }
-        let alert = NSAlert()
-        alert.alertStyle = .warning
+        let title: String
         if transactions.count == 1, let one = transactions.first {
             let currency = one.account?.currency ?? "GBP"
-            let day = Day.formatted(one.date, .abbreviated)
-            alert.messageText = "Delete the Reconciled Transaction “\(one.payee)”, \(day), \(Money.string(one.amount, currency: currency))?"
+            title = "Delete the Reconciled Transaction “\(one.payee)”, \(Day.formatted(one.date, .abbreviated)), \(Money.string(one.amount, currency: currency))?"
         } else {
-            alert.messageText = "Delete \(transactions.count) Transactions, Including \(reconciled.count) Reconciled?"
+            title = "Delete \(transactions.count) Transactions, Including \(reconciled.count) Reconciled?"
         }
         let accounts = Set(reconciled.compactMap { $0.account?.name }).sorted()
-        alert.informativeText = "This changes the reconciled balance of \(accounts.formatted(.list(type: .and)))."
-        let cancel = alert.addButton(withTitle: "Cancel")
-        cancel.keyEquivalent = "\r"
-        let delete = alert.addButton(withTitle: "Delete")
-        delete.hasDestructiveAction = true
-        delete.keyEquivalent = ""
-        alert.beginSheetModal(for: window) { response in
-            if response == .alertSecondButtonReturn { self.delete(transactions, undoManager: undoManager) }
-        }
+        Confirm.destructive(title, message: "This changes the reconciled balance of \(accounts.formatted(.list(type: .and))).",
+                            button: "Delete") { self.delete(transactions, undoManager: undoManager) }
     }
 }
 

@@ -82,11 +82,25 @@ enum Snapshot {
             if only == nil || only?.contains("add-account") == true {
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    model.isAddingAccount = true
+                    model.accountSheet = .add
                     try? await Task.sleep(for: .seconds(1))
                     capture(to: "\(dir)/add-account-\(mode).png", withSheet: true)
-                    model.isAddingAccount = false
+                    model.accountSheet = nil
                     try? await Task.sleep(for: .seconds(0.5))
+                    // S-010: Edit Account, and the Close Account confirmation.
+                    let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
+                    if let card = open.first(where: { $0.type == .creditCard }) {
+                        model.accountSheet = .edit(card.uuid)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/edit-account-\(mode).png", withSheet: true)
+                        model.accountSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                        model.closeAccount(card, undoManager: nil)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/close-account-\(mode).png", withSheet: true)
+                        for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet, returnCode: .alertFirstButtonReturn) } }
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
                 }
             }
             if only == nil || only?.contains("import") == true {

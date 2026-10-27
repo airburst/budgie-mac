@@ -53,22 +53,11 @@ final class ImportFlow {
         }
     }
 
-    /// An NSAlert, because a SwiftUI alert makes the destructive button the
-    /// default. Here Cancel is first and the default, so Return never replaces data.
+    /// Asks before replacing, with Cancel as the default (UI/Confirm.swift).
     func confirm(_ request: Pending, in model: AppModel) {
-        guard let window = NSApp.mainAppWindow else { return }
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = "Replace All Data with This Budgie File?"
-        alert.informativeText = "Your \(Self.count(request.accounts, "account")) and \(Self.count(request.transactions, "transaction")) in BudgieMac will be replaced. This can't be undone. Export your data first if you want a copy."
-        let cancel = alert.addButton(withTitle: "Cancel")
-        cancel.keyEquivalent = "\r"
-        let replace = alert.addButton(withTitle: "Replace All Data")
-        replace.hasDestructiveAction = true
-        replace.keyEquivalent = ""
-        alert.beginSheetModal(for: window) { response in
-            if response == .alertSecondButtonReturn { self.replace(with: request, in: model) }
-        }
+        Confirm.destructive("Replace All Data with This Budgie File?",
+                            message: "Your \(Self.count(request.accounts, "account")) and \(Self.count(request.transactions, "transaction")) in BudgieMac will be replaced. This can't be undone. Export your data first if you want a copy.",
+                            button: "Replace All Data") { self.replace(with: request, in: model) }
     }
 
     func replace(with request: Pending, in model: AppModel) {

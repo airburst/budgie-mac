@@ -13,9 +13,9 @@ struct ContentView: View {
         } detail: {
             detail
         }
-        .sheet(isPresented: Bindable(model).isAddingAccount) {
+        .sheet(item: Bindable(model).accountSheet) { mode in
             // No .noInitialFocus(): this sheet opens with focus in Name (S-004).
-            NavigationStack { AddAccountSheet() }
+            NavigationStack { AccountSheet(mode: mode) }
         }
         .sheet(item: Bindable(model).transactionSheet) { mode in
             NavigationStack { TransactionSheet(mode: mode) }

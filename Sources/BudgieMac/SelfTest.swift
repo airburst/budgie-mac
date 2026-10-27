@@ -113,6 +113,20 @@ enum SelfTest {
             spend.withdrawal = ""
             check("an empty amount is refused", (try? model.addTransaction(spend, to: wallet, undoManager: nil)) == nil)
 
+            // S-010: editing and closing an account, each undoable.
+            var rename = AccountDraft(wallet)
+            rename.name = "Self-test Purse"
+            let undoAccount = UndoManager()
+            model.save(rename, to: wallet, undoManager: undoAccount)
+            check("Edit Account renames the account", wallet.name == "Self-test Purse")
+            undoAccount.undo()
+            check("Undo Edit Account puts the name back", wallet.name == "Self-test Wallet")
+            model.setClosed(wallet, true, undoManager: undoAccount)
+            let openNow = (try? context.fetch(Account.openAccounts)) ?? []
+            check("a closed account leaves the sidebar", !openNow.contains { $0.uuid == wallet.uuid })
+            undoAccount.undo()
+            check("Undo Close Account reopens it", !wallet.deleted)
+
             // S-005: a register of 2,000 transactions opens in under 300 ms.
             let big = Account(name: "Self-test Big Register")
             context.insert(big)

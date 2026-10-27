@@ -90,23 +90,6 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
-    /// Shows the Add Account sheet (S-004).
-    var isAddingAccount = false
-
-    /// Adds the account, opens it, and offers "Undo Add Account".
-    @discardableResult
-    func add(_ draft: AccountDraft, undoManager: UndoManager?) -> Account {
-        let account = draft.makeAccount()
-        let context = container.mainContext
-        context.insert(account)
-        try? context.save()
-        sidebar = .account(account.uuid)
-        undoManager?.registerUndo(withTarget: self) { model in
-            if model.sidebar == .account(account.uuid) { model.sidebar = .page(.accounts) }
-            context.delete(account)
-            try? context.save()
-        }
-        undoManager?.setActionName("Add Account")
-        return account
-    }
+    /// The Add or Edit Account sheet, when open (S-004, S-010).
+    var accountSheet: AccountSheetMode?
 }

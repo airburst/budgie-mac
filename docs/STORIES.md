@@ -176,7 +176,7 @@ Acceptance:
 - [snap] Type and opening balance show but can't be edited.
 - [snap] "Close account" asks for confirmation and removes the account from the sidebar; its transactions stay.
 - [unit] A closed account is left out of totals but its transactions remain in reports for past dates.
-Status: todo
+Status: done (past-date reports are checked again in M6)
 
 ### S-011 Hide reconciled or cleared transactions
 As the user, I use the Filter menu in the register to hide reconciled or cleared rows.

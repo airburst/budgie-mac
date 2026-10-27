@@ -5,6 +5,7 @@ import SwiftUI
 /// S-003: the Total Balance card and a table of open accounts.
 struct AccountsPage: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.name)
     private var accounts: [Account]
     @State private var selection = Set<Account.ID>()
@@ -64,7 +65,7 @@ struct AccountsPage: View {
         }
         .contextMenu(forSelectionType: Account.ID.self) { ids in
             if let account = accounts.first(where: { ids.contains($0.id) }) {
-                Button("Open") { model.sidebar = .account(account.uuid) }
+                AccountMenuItems(account: account, undoManager: undoManager)
             }
         } primaryAction: { ids in
             if let account = accounts.first(where: { ids.contains($0.id) }) {
@@ -79,7 +80,7 @@ struct AccountsPage: View {
         } description: {
             Text("Add an account to start tracking your money, or bring everything over from Budgie.")
         } actions: {
-            Button("Add Account…") { model.isAddingAccount = true }
+            Button("Add Account…") { model.accountSheet = .add }
                 .buttonStyle(.borderedProminent)
             Button("Import from Budgie…") { model.importFlow.chooseFile() }
         }

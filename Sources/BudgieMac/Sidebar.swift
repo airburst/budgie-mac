@@ -5,6 +5,7 @@ import SwiftUI
 /// All Accounts, an Accounts section with one row per open account, then the other pages.
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.name)
     private var accounts: [Account]
 
@@ -17,7 +18,7 @@ struct Sidebar: View {
                     SidebarAccountRow(account: account)
                         .tag(SidebarSelection.account(account.uuid))
                         .contextMenu {
-                            Button("Open") { model.sidebar = .account(account.uuid) }
+                            AccountMenuItems(account: account, undoManager: undoManager)
                         }
                 }
             }
@@ -27,7 +28,7 @@ struct Sidebar: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack {
-                Button("Add Account", systemImage: "plus") { model.isAddingAccount = true }
+                Button("Add Account", systemImage: "plus") { model.accountSheet = .add }
                     .buttonStyle(.borderless)
                     .help("Add an account (⇧⌘N)")
                 Spacer()

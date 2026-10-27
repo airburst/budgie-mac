@@ -16,6 +16,31 @@ public struct AccountDraft: Equatable, Sendable {
         self.currency = currency ?? "GBP"
     }
 
+    /// Prefilled from an account, for Edit Account (S-010).
+    public init(_ account: Account, locale: Locale = .current) {
+        func text(_ value: Decimal?) -> String {
+            value.map { $0.formatted(.number.grouping(.never).locale(locale)) } ?? ""
+        }
+        name = account.name
+        type = account.type
+        number = account.number ?? ""
+        openingBalance = text(account.openingBalance)
+        currency = account.currency
+        creditLimit = text(account.creditLimit)
+        interestRate = text(account.interestRate)
+    }
+
+    /// Saves an edit. Type and opening balance are fixed after adding, so they stay.
+    public func apply(to account: Account, locale: Locale = .current) {
+        account.name = AccountName.clean(name)
+        let number = number.trimmingCharacters(in: .whitespaces)
+        account.number = number.isEmpty ? nil : number
+        account.currency = currency
+        account.creditLimit = account.type == .creditCard && !creditLimit.isEmpty ? Money.parse(creditLimit, locale: locale) : nil
+        account.interestRate = interestRate.isEmpty ? nil : Money.parse(interestRate, locale: locale)
+        account.updatedAt = .now
+    }
+
     /// Add Account stays disabled until Name is filled and the numbers read as numbers.
     public func canAdd(locale: Locale = .current) -> Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
