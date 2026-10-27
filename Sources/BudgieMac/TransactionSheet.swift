@@ -18,7 +18,12 @@ struct TransactionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Category> { !$0.deleted }) private var categories: [Category]
+    @Query private var payees: [Payee]
+    @Query(filter: #Predicate<Account> { !$0.deleted }, sort: \Account.name) private var accounts: [Account]
+    @Query private var preferences: [Preferences]
     @State private var draft = TransactionDraft()
+    /// What's typed in Category; it becomes `draft.category` when it names one.
+    @State private var categoryText = ""
     @State private var problem: TransactionDraft.Problem?
     @State private var loaded = false
     @FocusState private var payeeFocused: Bool
@@ -42,13 +47,48 @@ struct TransactionSheet: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                // S-013: known payees as suggestions; picking one fills in its defaults.
                 TextField("Payee", text: $draft.payee, prompt: Text("Corner Grocer, Amazon…"))
                     .focused($payeeFocused)
-                Picker("Category", selection: $draft.category) {
-                    Text("None").tag(Category?.none)
-                    ForEach(categories.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }) { category in
-                        Text(category.path).tag(Category?.some(category))
+                    .textInputSuggestions {
+                        ForEach(Suggestions.payees(payees, matching: draft.payee)) { payee in
+                            Text(payee.name).textInputCompletion(payee.name)
+                        }
                     }
+                    .onChange(of: draft.payee) { _, name in
+                        if let payee = Suggestions.payee(named: name, in: payees), payee.name == name {
+                            draft.fill(from: payee, autofill: preferences.first?.autofillPayees ?? true)
+                            if let category = draft.category { categoryText = category.path }
+                        }
+                    }
+                // S-012: type part of a category; matches show "Parent > Child".
+                TextField("Category", text: $categoryText, prompt: Text("None"))
+                    .textInputSuggestions {
+                        ForEach(Suggestions.categories(categories, matching: categoryText).prefix(12)) { category in
+                            Text(category.path).textInputCompletion(category.path)
+                        }
+                    }
+                    .onChange(of: categoryText) { _, text in
+                        draft.category = Suggestions.category(named: text, in: categories)
+                    }
+                if !categoryText.trimmingCharacters(in: .whitespaces).isEmpty, draft.category == nil {
+                    Label("“\(categoryText.trimmingCharacters(in: .whitespaces))” will be added as a new category.", systemImage: "plus.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                // S-014: a transfer moves the money to or from another of your accounts.
+                if let editing {
+                    if let partner = Transfers.partner(of: editing, in: context), let name = partner.account?.name {
+                        LabeledContent("Transfer", value: editing.amount < 0 ? "To \(name)" : "From \(name)")
+                    }
+                } else {
+                    Picker("Transfer", selection: $draft.transferAccount) {
+                        Text("None").tag(Account?.none)
+                        ForEach(accounts.filter { $0.uuid != addingTo }) { account in
+                            Text(account.name).tag(Account?.some(account))
+                        }
+                    }
+                    .help("Move the money between this account and another of your accounts. A withdrawal goes to it; a deposit comes from it.")
                 }
             }
             Section {
@@ -91,11 +131,23 @@ struct TransactionSheet: View {
             guard !loaded else { return }
             loaded = true
             if let editing { draft = TransactionDraft(editing) }
+            categoryText = draft.category?.path ?? ""
             payeeFocused = true
         }
     }
 
+    private var addingTo: UUID? {
+        if case .add(let uuid) = mode { uuid } else { nil }
+    }
+
     private func save() {
+        // A category name that matches nothing is added, as in Budgie.
+        let typed = categoryText.trimmingCharacters(in: .whitespaces)
+        if draft.category == nil, !typed.isEmpty, draft.amount().isSuccess {
+            let category = Category(name: typed)
+            context.insert(category)
+            draft.category = category
+        }
         do {
             switch mode {
             case .add(let uuid):

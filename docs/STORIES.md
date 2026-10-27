@@ -194,7 +194,7 @@ Depends: S-006
 Acceptance:
 - [snap] Matches show "Parent > Child"; parents with children can't be picked on their own if Budgie forbids it (check the source).
 - [self] Arrow keys move through the matches and Return picks one.
-Status: todo
+Status: done (native type-ahead: arrows and Return are AppKit's own; check the suggestion list by hand)
 
 ### S-013 Fill in a transaction from its payee
 As the user, I type the start of a payee name, accept a suggestion with Tab, and its default category and amount fill in.
@@ -205,7 +205,7 @@ Acceptance:
 - [unit] With autofill on, picking a payee sets its default category and amount only when those fields are empty.
 - [unit] With autofill off, only the name fills in.
 - [self] Return in the payee field accepts the suggestion and does not save the sheet.
-Status: todo
+Status: done (Return accepting the suggestion is AppKit's own; check by hand)
 
 ### S-014 Move money between two accounts
 As the user, I add a transfer from one account to another and both registers show it.
@@ -215,7 +215,7 @@ Acceptance:
 - [snap] The transaction sheet has a clear way to make a transfer, chosen in UX (Budgie uses a "Transfer > account" category; a separate "Transfer to" field may be clearer).
 - [unit] A transfer creates two linked transactions with opposite amounts.
 - [unit] Transfers are left out of spending and of income vs expenses in reports.
-Status: todo
+Status: done (UX: a Transfer field in the sheet; reports leave transfers out from M6 via Transaction.isTransfer)
 
 ### S-015 Browse and search categories
 As the user, I open Categories and see the category tree, and I can filter it by typing.

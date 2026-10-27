@@ -77,5 +77,13 @@ enum SeedData {
             context.insert(transaction)
         }
         context.insert(AccountReconciliation(account: current, date: day(35), balance: money("3391.37")))
+        // Payees with defaults, as saving those transactions would have made them.
+        context.insert(Payee(name: "Corner Grocer", category: groceries, amount: money("-70.20")))
+        context.insert(Payee(name: "Employer Ltd", category: salary, amount: money("2345.67")))
+        context.insert(Payee(name: "Rent", category: household, amount: money("-1150")))
+        context.insert(Payee(name: "The Noodle Bar", category: eatingOut))
+        for name in ["Power Co", "Bookshop", "Coffee", "Café de Paris", "Loan Payment", "Payment Received"] {
+            context.insert(Payee(name: name))
+        }
     }
 }

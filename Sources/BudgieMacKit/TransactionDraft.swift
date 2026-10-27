@@ -23,6 +23,8 @@ public struct TransactionDraft {
     public var deposit = ""
     public var notes = ""
     public var cleared = false
+    /// S-014: the other account of a transfer. Withdrawals go to it, deposits come from it.
+    public var transferAccount: Account?
 
     public init(date: Date = Day.today) {
         self.date = date
@@ -67,6 +69,21 @@ public struct TransactionDraft {
         let transaction = Transaction(account: account, date: date, payee: cleanPayee, amount: amount, category: category)
         apply(notesAndCleared: transaction)
         context.insert(transaction)
+        if let other = transferAccount, other !== account {
+            // The other half: same date, payee, notes and status; the opposite amount.
+            let partner = Transaction(account: other, date: date, payee: cleanPayee, amount: -amount)
+            apply(notesAndCleared: partner)
+            transaction.transferUUID = partner.uuid
+            partner.transferUUID = transaction.uuid
+            // Budgie files transfers under "Transfer > <account name>"; keep that when those categories exist.
+            let categories = (try? context.fetch(FetchDescriptor<Category>())) ?? []
+            func transferCategory(_ name: String) -> Category? {
+                categories.first { $0.kind == .transfer && $0.parent != nil && !$0.deleted && $0.name == name }
+            }
+            if transaction.category == nil { transaction.category = transferCategory(other.name) }
+            partner.category = transferCategory(account.name)
+            context.insert(partner)
+        }
         rememberPayee(in: context)
         return transaction
     }
@@ -100,4 +117,8 @@ public struct TransactionDraft {
         guard !existing.contains(where: { $0.name.compare(name, options: .caseInsensitive) == .orderedSame }) else { return }
         context.insert(Payee(name: name))
     }
+}
+
+public extension Result {
+    var isSuccess: Bool { if case .success = self { true } else { false } }
 }
