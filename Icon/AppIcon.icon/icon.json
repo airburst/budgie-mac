@@ -1,13 +1,12 @@
 {
-  "fill" : { "automatic-gradient" : "srgb:0.13000,0.62000,0.36000,1.00000" },
+  "fill" : { "solid" : "srgb:0.00000,0.20000,0.90000,1.00000" },
   "groups" : [
     {
       "layers" : [
-        { "glass" : true, "image-name" : "front.svg", "name" : "budgie" },
-        { "glass" : true, "image-name" : "back.svg", "name" : "perch", "opacity" : 0.6 }
+        { "glass" : false, "image-name" : "budgie.png", "name" : "budgie" }
       ],
-      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
-      "translucency" : { "enabled" : true, "value" : 0.5 }
+      "shadow" : { "kind" : "none", "opacity" : 0 },
+      "translucency" : { "enabled" : false, "value" : 0 }
     }
   ],
   "supported-platforms" : { "squares" : [ "macOS" ] }

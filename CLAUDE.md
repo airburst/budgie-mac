@@ -9,7 +9,7 @@ SwiftData database and no server.
 - `Sources/BudgieMacKit/` rules and data logic with no SwiftUI. Tests in `Tests/BudgieMacKitTests/`.
 - `Package.swift` a Swift package. There is no Xcode project.
 - `build.sh` builds, signs, and installs `~/Applications/BudgieMac.app`.
-- `Icon/AppIcon.icon` the app icon, an Icon Composer file (JSON plus SVG layers). `build.sh` compiles it with `tools/make_icon.sh`; `tools/icon_review.sh` renders every look into one PNG.
+- `Icon/AppIcon.icon` the app icon, an Icon Composer file (JSON plus image layers; the artwork is the Electron app's icon). `build.sh` compiles it with `tools/make_icon.sh`; `tools/icon_review.sh` renders every look into one PNG.
 - `docs/` the brief, the screen index, and the user stories, when they exist.
 
 ## Build and check

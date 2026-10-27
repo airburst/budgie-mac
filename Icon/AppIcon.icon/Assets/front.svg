@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- A budgie perched, facing right: tail, body, head with an eye, and a hooked beak. -->
-  <path fill="#ffffff" d="M440 640 L318 892 Q306 930 345 918 L525 700 Z"/>
-  <ellipse fill="#ffffff" cx="500" cy="560" rx="165" ry="215" transform="rotate(-28 500 560)"/>
-  <path fill="#ffffff" fill-rule="evenodd" d="M600 235 a125 125 0 1 1 0 250 a125 125 0 1 1 0 -250 Z M640 325 a24 24 0 1 0 0 48 a24 24 0 1 0 0 -48 Z"/>
-  <path fill="#ffffff" d="M712 320 Q790 330 772 410 Q752 380 712 392 Z"/>
-</svg>
