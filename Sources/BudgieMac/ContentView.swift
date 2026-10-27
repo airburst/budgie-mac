@@ -36,6 +36,8 @@ struct ContentView: View {
             AccountsPage()
         case .page(.categories):
             CategoriesPage()
+        case .page(.payees):
+            PayeesPage()
         case .page(let page):
             ContentUnavailableView(page.title, systemImage: page.symbol)
                 .navigationTitle(page.title)

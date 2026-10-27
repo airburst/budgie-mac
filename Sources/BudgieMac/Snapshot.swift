@@ -101,6 +101,21 @@ enum Snapshot {
                     }
                 }
             }
+            if only == nil || only?.contains("payees") == true {
+                // S-019: Edit Payee for Corner Grocer.
+                let payees = (try? model.container.mainContext.fetch(FetchDescriptor<Payee>())) ?? []
+                if let grocer = payees.first(where: { $0.name == "Corner Grocer" }) {
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        model.sidebar = .page(.payees)
+                        model.payeeSheet = .edit(grocer.persistentModelID)
+                        try? await Task.sleep(for: .seconds(1))
+                        capture(to: "\(dir)/edit-payee-\(mode).png", withSheet: true)
+                        model.payeeSheet = nil
+                        try? await Task.sleep(for: .seconds(0.5))
+                    }
+                }
+            }
             if only == nil || only?.contains("add-account") == true {
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)

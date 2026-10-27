@@ -90,6 +90,9 @@ final class AppModel {
         if case .account(let uuid) = sidebar { uuid } else { nil }
     }
 
+    /// The Add or Edit Payee sheet, when open (S-019).
+    var payeeSheet: PayeeSheetMode?
+
     /// The Add or Edit Category sheet, when open (S-016, S-017).
     var categorySheet: CategorySheetMode?
 

@@ -252,7 +252,7 @@ Depends: S-001
 Acceptance:
 - [snap] Amounts use the standard currency format (Fixes: "+2850.00" and "−55.00" with no £ sign).
 - [snap] The empty state explains that payees are added when you save a transaction.
-Status: todo
+Status: done
 
 ### S-019 Add, edit or rename a payee
 As the user, I create a payee or change its name, default category and default amount.
@@ -261,7 +261,7 @@ Depends: S-018
 Acceptance:
 - [snap] Name can be edited (Fixes: payees can't be renamed).
 - [unit] Renaming offers to update existing transactions with the old name; renaming to an existing name merges the two.
-Status: todo
+Status: done
 
 ### S-020 Delete a payee
 As the user, I delete a payee I no longer use.
@@ -270,7 +270,7 @@ Depends: S-018
 Acceptance:
 - [unit] Deleting a payee keeps the payee text on past transactions.
 - [snap] The confirmation names the payee.
-Status: todo
+Status: done
 
 ## M3 Reconcile
 
