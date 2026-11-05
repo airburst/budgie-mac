@@ -1,3 +1,4 @@
+import AppKit
 import BudgieMacKit
 import SwiftData
 import SwiftUI
@@ -104,15 +105,7 @@ struct ReconcileView: View {
                     .padding(.bottom, Space.sm)
             }
             Table(rows) {
-                TableColumn("") { transaction in
-                    Toggle("Matched", isOn: Binding(
-                        get: { ticked.contains(transaction.persistentModelID) },
-                        set: { model.setTicked(transaction, $0) }))
-                        .labelsHidden()
-                        .toggleStyle(.checkbox)
-                }
-                .width(24)
-                TableColumn("Date") { Text(Day.formatted($0.date)).monospacedDigit() }
+                TableColumn("Date") { Text(Day.formatted($0.date)).monospacedDigit().background(RowHover()) }
                     .width(min: 80, ideal: 96)
                 TableColumn("Payee") { Text($0.payee).lineLimit(1) }
                 TableColumn("Category") { transaction in
@@ -121,6 +114,15 @@ struct ReconcileView: View {
                 TableColumn("Amount") { MoneyText(amount: $0.amount, currency: currency) }
                     .width(min: 90, ideal: 110)
                     .alignment(.trailing)
+                // Next to the amount, so ticking reads straight across from the statement.
+                TableColumn("") { transaction in
+                    Toggle("Matched", isOn: Binding(
+                        get: { ticked.contains(transaction.persistentModelID) },
+                        set: { model.setTicked(transaction, $0) }))
+                        .labelsHidden()
+                        .toggleStyle(.checkbox)
+                }
+                .width(24)
             }
             .contextMenu(forSelectionType: PersistentIdentifier.self) { ids in
                 if let id = ids.first {
@@ -162,6 +164,43 @@ struct ReconcileView: View {
         .padding(.horizontal, Space.margin)
         .padding(.vertical, Space.md)
         .background(.bar)
+    }
+}
+
+/// Tints the whole row under the pointer. SwiftUI's Table clips each cell, so
+/// the band goes on AppKit's row view, under the cells, and tracks the pointer there.
+private struct RowHover: NSViewRepresentable {
+    func makeNSView(context: Context) -> Probe { Probe() }
+    func updateNSView(_ view: Probe, context: Context) {}
+
+    final class Probe: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let row = sequence(first: self as NSView, next: \.superview).compactMap({ $0 as? NSTableRowView }).first,
+                  !row.subviews.contains(where: { $0 is Band }) else { return }
+            // The inset table style draws its rows 10 pt in from the row view's edges.
+            let band = Band(frame: row.bounds.insetBy(dx: 10, dy: 0))
+            band.autoresizingMask = [.width, .height]
+            row.addSubview(band, positioned: .below, relativeTo: nil)
+        }
+    }
+
+    final class Band: NSView {
+        private var inside = false { didSet { needsDisplay = true } }
+        override var wantsUpdateLayer: Bool { true }
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            trackingAreas.forEach(removeTrackingArea)
+            addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self))
+        }
+        override func mouseEntered(with event: NSEvent) { inside = true }
+        override func mouseExited(with event: NSEvent) { inside = false }
+        override func updateLayer() {
+            layer?.cornerRadius = Space.xs
+            layer?.backgroundColor = inside ? NSColor.quaternaryLabelColor.cgColor : nil
+        }
     }
 }
 
