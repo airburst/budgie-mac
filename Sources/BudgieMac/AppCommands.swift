@@ -14,6 +14,7 @@ struct AppCommands: Commands {
         // S-058: the standard About panel, with a link to what's new.
         CommandGroup(replacing: .appInfo) {
             Button("About BudgieMac") { AboutPanel.show() }
+            Button("Check for Updates…") { UpdateChecker.shared.checkNow() }
         }
         CommandGroup(replacing: .help) {
             Button("What's New in BudgieMac") { AboutPanel.openChangelog() }

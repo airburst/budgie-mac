@@ -86,6 +86,22 @@ bun run release patch --dry-run  # everything up to the zip; nothing committed o
 
 If anything fails before the commit, the version files go back as they were.
 
+## Updates
+
+Once a day, at launch or when the app comes forward, BudgieMac asks GitHub for
+the [latest release](https://github.com/airburst/budgie-mac/releases/latest).
+When there's a newer version it posts a notification: **Download** opens the
+zip, and clicking the notification opens the release notes. You hear about each
+version once. **BudgieMac > Check for Updates…** checks at any time and always
+answers. Turn automatic checks off in Settings > General.
+
+The check is one request to GitHub's public API. Nothing about you or your
+budget is sent. Install the download the same way as the first time (see below).
+
+To try it, run an older pretend version:
+`APP_PRETEND_VERSION=0.1.0 ~/Applications/BudgieMac.app/Contents/MacOS/BudgieMac`.
+Runs with `APP_STORE` in `/tmp` only check from the menu and save nothing.
+
 ## Signing
 
 `build.sh` signs with your Apple Development certificate if there is one in the

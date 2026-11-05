@@ -11,6 +11,7 @@ import SwiftUI
 //   BudgieMac --selftest           run the self-test on a /tmp store and quit with 0 or 1 (tools/selftest.sh)
 //   APP_ACCENT=<id> BudgieMac      run with another accent from Theme.all (UI/Theme.swift)
 //   APP_GRID=1 BudgieMac           draw the 8 pt grid and the layout probes over the window
+//   APP_PRETEND_VERSION=0.1.0 BudgieMac   act as an older version, to try Check for Updates…
 
 @main
 struct BudgieMacApp: App {
@@ -40,10 +41,15 @@ struct BudgieMacApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        UpdateChecker.shared.prepare()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Started from a terminal, the process is not a foreground app yet.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
+        UpdateChecker.shared.start()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

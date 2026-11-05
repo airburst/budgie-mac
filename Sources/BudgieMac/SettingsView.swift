@@ -101,6 +101,7 @@ struct GeneralSettings: View {
             Text("When you pick a known payee in a transaction, its default category and amount fill in any empty fields.")
                 .font(.caption).foregroundStyle(.secondary)
         }
+        UpdateSettings()
     }
 
     private func binding<Value>(_ keyPath: ReferenceWritableKeyPath<Preferences, Value>) -> Binding<Value> {
@@ -111,6 +112,27 @@ struct GeneralSettings: View {
                     try? context.save()
                     model.applyAppearance()
                 })
+    }
+}
+
+/// Update checks: on or off, when the last one ran, and one now.
+private struct UpdateSettings: View {
+    @Bindable private var updates = UpdateChecker.shared
+
+    var body: some View {
+        Section {
+            Toggle("Check for updates automatically", isOn: $updates.automatic)
+            LabeledContent("Last Checked") {
+                HStack(spacing: Space.sm) {
+                    Text(updates.lastChecked.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "Never")
+                    Button("Check Now") { updates.checkNow() }
+                        .disabled(updates.checking)
+                }
+            }
+        } footer: {
+            Text("Once a day, BudgieMac asks GitHub for the latest version and tells you when there's a newer one. Nothing about you or your budget is sent.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
     }
 }
 
