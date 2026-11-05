@@ -1,5 +1,10 @@
 # BudgieMac changelog
 
+## 1.1.2
+
+- Forecast chart fills at least half the page
+- Add the bama skills to the repo so every clone has them
+
 ## 1.1.1
 
 - BudgieMac checks for updates at every launch and shows the update alert; Later reminds you a day on
