@@ -1,5 +1,10 @@
 # BudgieMac changelog
 
+## 1.1.0
+
+- Install and Relaunch: BudgieMac downloads a new version, checks it, replaces itself and reopens, with no quarantine warning
+- BudgieMac tells you when a newer version is on GitHub, with a Download button, and Check for Updates… in the app menu
+
 ## 1.0.1
 
 - Publish a release from this Mac with bun run release: picks the version, tests, builds, zips, tags and uploads to GitHub
