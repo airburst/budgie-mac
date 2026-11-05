@@ -1,6 +1,6 @@
 # BudgieMac changelog
 
-## 1.0
+## 1.0.0
 
 The first native Mac version of Budgie.
 

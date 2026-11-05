@@ -40,16 +40,17 @@ an `.app` bundle.
 
 ## Scripts
 
-| Command                                                        | Description                                                        |
-| -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `./build.sh`                                                   | Release build, signed and installed to `~/Applications`            |
-| `./build.sh --debug`                                           | Debug build                                                        |
-| `./build.sh --open`                                            | Build, then quit the running copy and open the new one             |
-| `swift test --scratch-path ~/Library/Developer/BudgieMac/test-build` | Unit tests for `BudgieMacKit` (Swift Testing)                |
-| `tools/selftest.sh`                                            | Runs the app's real actions against a throwaway store in `/tmp`    |
-| `tools/snap.sh`                                                | Light and dark snapshots of every page to `/tmp/BudgieMac-shots/`  |
-| `tools/grid-lint.sh`                                           | Checks spacing values sit on the 4 pt grid                         |
-| `tools/make_icon.sh`                                           | Compiles `Icon/AppIcon.icon` (`build.sh` runs it when needed)      |
+| Command                                                              | Description                                                       |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `./build.sh`                                                         | Release build, signed and installed to `~/Applications`           |
+| `./build.sh --debug`                                                 | Debug build                                                       |
+| `./build.sh --open`                                                  | Build, then quit the running copy and open the new one            |
+| `swift test --scratch-path ~/Library/Developer/BudgieMac/test-build` | Unit tests for `BudgieMacKit` (Swift Testing)                     |
+| `tools/selftest.sh`                                                  | Runs the app's real actions against a throwaway store in `/tmp`   |
+| `tools/snap.sh`                                                      | Light and dark snapshots of every page to `/tmp/BudgieMac-shots/` |
+| `tools/grid-lint.sh`                                                 | Checks spacing values sit on the 4 pt grid                        |
+| `tools/make_icon.sh`                                                 | Compiles `Icon/AppIcon.icon` (`build.sh` runs it when needed)     |
+| `bun run release`                                                    | Test, build and publish a GitHub release (see below)              |
 
 For `swift` commands, prefix `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
 if `xcode-select -p` points at the Command Line Tools. `build.sh` does this by
@@ -58,6 +59,32 @@ itself.
 Build products go to `~/Library/Developer/BudgieMac`, outside the repo. The
 self-test, snapshots and sample data refuse to run unless `APP_STORE` points
 into `/tmp`, so they never touch your real data.
+
+## Releasing
+
+Releases are built on this Mac, not in CI, and published to GitHub Releases
+with `gh`.
+
+```bash
+bun run release                  # recommends a level from the commits, then asks
+bun run release minor            # or major / patch: skips the question
+bun run release patch --dry-run  # everything up to the zip; nothing committed or published
+```
+
+`tools/release.ts`:
+
+1. Refuses unless you're on a clean `main` that's level with `origin/main`, and `gh` is signed in.
+2. Picks the next version from `Info.plist.in` (the single source of the version). It recommends
+   patch when every commit since the last tag is a fix or tidy-up, major when one says "breaking",
+   and minor otherwise.
+3. Uses the version's section in `CHANGELOG.md` as the release notes, or drafts one from the commit
+   subjects. You can accept, edit (`$EDITOR`) or stop.
+4. Runs the unit tests and the grid lint, builds to `~/Library/Developer/BudgieMac/release/<version>/`,
+   runs the self-test on that build, and zips it with `ditto` plus a SHA-256 file.
+5. Commits the version and changelog as `Release x.y.z`, tags `vx.y.z`, pushes `main` and the tag
+   together, then creates a draft release with the zip attached and publishes it.
+
+If anything fails before the commit, the version files go back as they were.
 
 ## Signing
 

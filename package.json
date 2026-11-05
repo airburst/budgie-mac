@@ -1,0 +1,10 @@
+{
+  "name": "budgie-mac",
+  "private": true,
+  "scripts": {
+    "release": "bun tools/release.ts",
+    "build": "./build.sh",
+    "test": "DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer} swift test --scratch-path ~/Library/Developer/BudgieMac/test-build",
+    "selftest": "tools/selftest.sh"
+  }
+}

@@ -16,6 +16,11 @@ name="BudgieMac"
 scratch="$HOME/Library/Developer/$name/build"
 config=release
 [[ " $* " == *" --debug "* ]] && config=debug
+out=""
+args=("$@")
+for (( i = 1; i <= $#args; i++ )); do
+  [[ "${args[i]}" == --out ]] && out="${args[i+1]:?--out needs a folder}"
+done
 
 # Sign with your Apple Development certificate when you have one (Xcode >
 # Settings > Accounts). Otherwise sign ad hoc, which is fine for your own Mac.
@@ -36,12 +41,14 @@ if [[ -n "$stale" ]]; then
   exit 1
 fi
 
-app="$HOME/Applications/$name.app"
-mkdir -p "$HOME/Applications"
+dest="${out:-$HOME/Applications}"
+app="$dest/$name.app"
+mkdir -p "$dest"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
-sed -e "s/__BUILD__/$(git -C "$here" rev-list --count HEAD 2>/dev/null || date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
+build="${BUILD_NUMBER:-$(git -C "$here" rev-list --count HEAD 2>/dev/null || date +%Y%m%d%H%M)}"
+sed -e "s/__BUILD__/$build/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
 # The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
 if [[ -d "$here/Icon/AppIcon.icon" ]]; then
   car="$here/Resources/Assets.car"
@@ -54,9 +61,9 @@ fi
 cp -X "$here/CHANGELOG.md" "$app/Contents/Resources/"
 xattr -cr "$app"
 codesign --force --sign "$identity" "$app" 2>&1 | grep -v "replacing existing signature" || true
-echo "installed $app (signed: ${identity})"
+echo "$([[ -n $out ]] && echo built || echo installed) $app (signed: ${identity})"
 
-if [[ " $* " == *" --open "* ]]; then
+if [[ -z "$out" && " $* " == *" --open "* ]]; then
   osascript -e "quit app \"$name\"" 2>/dev/null || true
   sleep 0.5
   open "$app"
