@@ -20,47 +20,50 @@ struct ForecastView: View {
         let rows = Forecast.rows(for: account, schedules: schedules, through: end)
         let balances = Forecast.balances(rows, start: start, excluded: excluded)
         let currency = account.currency
-        VStack(spacing: 0) {
-            ForecastChart(points: Forecast.points(rows, balances: balances, start: start, end: end),
-                          accountName: account.name, currency: currency)
-                .frame(height: 220)
-                .padding(Space.margin)
-            if rows.isEmpty {
-                ContentUnavailableView {
-                    Label("Nothing Scheduled", systemImage: "calendar")
-                } description: {
-                    Text("No scheduled transactions touch \(account.name) before \(Day.formatted(end, .abbreviated)).")
-                }
-            } else {
-                Table(rows, selection: $selection) {
-                    TableColumn("Include") { row in
-                        Toggle("Include", isOn: Binding(
-                            get: { !excluded.contains(row.id) },
-                            set: { on in if on { excluded.remove(row.id) } else { excluded.insert(row.id) } }))
-                            .labelsHidden()
-                            .toggleStyle(.checkbox)
-                            .help("Untick to see the balance without this one. Nothing is changed.")
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                // At least half the page, so the shape of the projection reads at a glance.
+                ForecastChart(points: Forecast.points(rows, balances: balances, start: start, end: end),
+                              accountName: account.name, currency: currency)
+                    .frame(height: max(220, geometry.size.height / 2 - Space.margin * 2))
+                    .padding(Space.margin)
+                if rows.isEmpty {
+                    ContentUnavailableView {
+                        Label("Nothing Scheduled", systemImage: "calendar")
+                    } description: {
+                        Text("No scheduled transactions touch \(account.name) before \(Day.formatted(end, .abbreviated)).")
                     }
-                    .width(56)
-                    TableColumn("Date") { Text(Day.formatted($0.date)).monospacedDigit() }
-                        .width(min: 80, ideal: 96)
-                    TableColumn("Payee") { row in
-                        Label(row.payee, systemImage: row.isTransfer ? "arrow.left.arrow.right" : row.isScheduled ? "calendar" : "list.bullet")
-                            .help(row.isScheduled ? "Scheduled" : "In the register, dated after today")
-                            .lineLimit(1)
-                            .opacity(excluded.contains(row.id) ? 0.5 : 1)
-                    }
-                    TableColumn("Amount") { MoneyText(amount: $0.amount, currency: currency) }
-                        .width(min: 90, ideal: 110)
+                } else {
+                    Table(rows, selection: $selection) {
+                        TableColumn("Include") { row in
+                            Toggle("Include", isOn: Binding(
+                                get: { !excluded.contains(row.id) },
+                                set: { on in if on { excluded.remove(row.id) } else { excluded.insert(row.id) } }))
+                                .labelsHidden()
+                                .toggleStyle(.checkbox)
+                                .help("Untick to see the balance without this one. Nothing is changed.")
+                        }
+                        .width(56)
+                        TableColumn("Date") { Text(Day.formatted($0.date)).monospacedDigit() }
+                            .width(min: 80, ideal: 96)
+                        TableColumn("Payee") { row in
+                            Label(row.payee, systemImage: row.isTransfer ? "arrow.left.arrow.right" : row.isScheduled ? "calendar" : "list.bullet")
+                                .help(row.isScheduled ? "Scheduled" : "In the register, dated after today")
+                                .lineLimit(1)
+                                .opacity(excluded.contains(row.id) ? 0.5 : 1)
+                        }
+                        TableColumn("Amount") { MoneyText(amount: $0.amount, currency: currency) }
+                            .width(min: 90, ideal: 110)
+                            .alignment(.trailing)
+                        TableColumn("Projected Balance") { row in
+                            let balance = balances[row.id] ?? 0
+                            Text(Money.string(balance, currency: currency))
+                                .monospacedDigit()
+                                .foregroundStyle(balance < 0 ? Palette.moneyOut : Color.primary)
+                        }
+                        .width(min: 110, ideal: 130)
                         .alignment(.trailing)
-                    TableColumn("Projected Balance") { row in
-                        let balance = balances[row.id] ?? 0
-                        Text(Money.string(balance, currency: currency))
-                            .monospacedDigit()
-                            .foregroundStyle(balance < 0 ? Palette.moneyOut : Color.primary)
                     }
-                    .width(min: 110, ideal: 130)
-                    .alignment(.trailing)
                 }
             }
         }
