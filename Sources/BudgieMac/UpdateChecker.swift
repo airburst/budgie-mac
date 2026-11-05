@@ -2,10 +2,13 @@ import AppKit
 import BudgieMacKit
 import UserNotifications
 
-/// Checks GitHub for a newer release: quietly once a day, with a notification
-/// that offers Install and Relaunch (or Download, for a release without a
-/// checksum), or from BudgieMac > Check for Updates…, which always answers in an alert. The settings belong to this Mac, so they live in
-/// UserDefaults, not in the budget data.
+/// Checks GitHub for a newer release at every launch, and when the app comes
+/// forward after a day. A newer version shows the update alert when BudgieMac is
+/// in front, or a notification when it's not; Later reminds again a day on.
+/// BudgieMac > Check for Updates… always answers. Both offer Install and
+/// Relaunch (or Download, for a release without a checksum). The settings
+/// belong to this Mac, so they live in UserDefaults, not in the budget data.
+/// Test runs (a /tmp store) don't save them.
 @Observable
 final class UpdateChecker: NSObject {
     static let shared = UpdateChecker()
@@ -13,7 +16,8 @@ final class UpdateChecker: NSObject {
     private enum Key {
         static let automatic = "updates.automatic"
         static let lastChecked = "updates.lastChecked"
-        static let notified = "updates.notifiedVersion"
+        static let remindedVersion = "updates.remindedVersion"
+        static let remindedAt = "updates.remindedAt"
     }
     nonisolated private static let category = "update"
     nonisolated private static let downloadCategory = "update.download"
@@ -29,8 +33,12 @@ final class UpdateChecker: NSObject {
     private(set) var lastChecked = UserDefaults.standard.object(forKey: Key.lastChecked) as? Date {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(lastChecked, forKey: Key.lastChecked) } }
     }
-    private var notified = UserDefaults.standard.string(forKey: Key.notified) {
-        didSet { if !Store.isOverridden { UserDefaults.standard.set(notified, forKey: Key.notified) } }
+    /// The version last shown, and when: Later waits a day before showing it again.
+    private var remindedVersion = UserDefaults.standard.string(forKey: Key.remindedVersion) {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(remindedVersion, forKey: Key.remindedVersion) } }
+    }
+    private var remindedAt = UserDefaults.standard.object(forKey: Key.remindedAt) as? Date {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(remindedAt, forKey: Key.remindedAt) } }
     }
     private(set) var checking = false
     private var installing: Task<Void, Never>?
@@ -41,8 +49,11 @@ final class UpdateChecker: NSObject {
             ?? Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
-    /// Test, snapshot and self-test runs never check on their own.
-    private var checksAutomatically: Bool { automatic && !Store.isOverridden }
+    /// Test, snapshot and self-test runs never check on their own, unless they
+    /// pretend to be an older version to try it (they save nothing either way).
+    private var checksAutomatically: Bool {
+        automatic && (!Store.isOverridden || ProcessInfo.processInfo.environment["APP_PRETEND_VERSION"] != nil)
+    }
 
     /// Before launch finishes, so a click on a notification that opened the app arrives here.
     func prepare() {
@@ -56,9 +67,9 @@ final class UpdateChecker: NSObject {
         ])
     }
 
-    /// At launch, then whenever the app comes forward and a day has passed.
+    /// At every launch, then whenever the app comes forward and a day has passed.
     func start() {
-        checkIfDue()
+        if checksAutomatically { Task { await check(fromMenu: false) } }
         Task {
             for await _ in NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification) {
                 checkIfDue()
@@ -85,16 +96,22 @@ final class UpdateChecker: NSObject {
             let release = try await fetchLatest()
             lastChecked = .now
             if fromMenu {
-                if Updates.isNewer(release, than: current) { notified = release.version }
+                if Updates.isNewer(release, than: current) { reminded(release) }
                 showAlert(for: release, current: current)
-            } else if Updates.shouldNotify(release, current: current, alreadyNotified: notified) {
-                notified = release.version
-                await announce(release, current: current)
+            } else if Updates.shouldRemind(release, current: current, remindedVersion: remindedVersion, remindedAt: remindedAt) {
+                reminded(release)
+                // In front, as at launch: the alert. Behind other apps: a notification.
+                if NSApp.isActive { showAlert(for: release, current: current) } else { await announce(release, current: current) }
             }
         } catch {
             // An automatic check stays quiet and tries again next time.
             if fromMenu { showProblem(error) }
         }
+    }
+
+    private func reminded(_ release: Updates.Release) {
+        remindedVersion = release.version
+        remindedAt = .now
     }
 
     private enum CheckProblem: LocalizedError {

@@ -130,7 +130,7 @@ private struct UpdateSettings: View {
                 }
             }
         } footer: {
-            Text("Once a day, BudgieMac asks GitHub for the latest version and tells you when there's a newer one. Nothing about you or your budget is sent.")
+            Text("At launch, BudgieMac asks GitHub for the latest version and tells you when there's a newer one. Nothing about you or your budget is sent.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }

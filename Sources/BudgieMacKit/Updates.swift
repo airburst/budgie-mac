@@ -64,9 +64,13 @@ public enum Updates {
         return now.timeIntervalSince(lastChecked) >= interval || lastChecked > now
     }
 
-    /// An automatic check notifies once per version; a check from the menu always answers.
-    public static func shouldNotify(_ release: Release, current: String, alreadyNotified: String?) -> Bool {
-        isNewer(release, than: current) && release.version != alreadyNotified
+    /// An automatic check reminds about a version at most once per interval, so
+    /// Later means tomorrow, not never. A check from the menu always answers.
+    public static func shouldRemind(_ release: Release, current: String, remindedVersion: String?,
+                                    remindedAt: Date?, now: Date = .now) -> Bool {
+        guard isNewer(release, than: current) else { return false }
+        guard release.version == remindedVersion else { return true }
+        return isDue(lastChecked: remindedAt, now: now)
     }
 
     /// The release notes without the install instructions every release repeats.

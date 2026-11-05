@@ -88,13 +88,13 @@ If anything fails before the commit, the version files go back as they were.
 
 ## Updates
 
-Once a day, at launch or when the app comes forward, BudgieMac asks GitHub for
-the [latest release](https://github.com/airburst/budgie-mac/releases/latest).
-When there's a newer version it posts a notification. **Install and Relaunch**
-downloads it, checks it, puts it in place of the running app and reopens.
-Clicking the notification opens the release notes. You hear about each version
-once. **BudgieMac > Check for Updates…** checks at any time and always answers.
-Turn automatic checks off in Settings > General.
+At every launch, and when the app comes forward after a day, BudgieMac asks
+GitHub for the [latest release](https://github.com/airburst/budgie-mac/releases/latest).
+When there's a newer version it shows the update alert, or a notification if
+BudgieMac is behind other apps. **Install and Relaunch** downloads it, checks
+it, puts it in place of the running app and reopens. **Later** reminds you again
+a day on. **BudgieMac > Check for Updates…** checks at any time and always
+answers. Turn automatic checks off in Settings > General.
 
 Install and Relaunch checks the zip against the release's `.sha256` file, then
 checks that the app inside is BudgieMac at that version with an intact
@@ -108,8 +108,8 @@ budget is sent.
 
 To try it, run an older pretend version:
 `APP_PRETEND_VERSION=0.1.0 ~/Applications/BudgieMac.app/Contents/MacOS/BudgieMac`.
-Runs with `APP_STORE` in `/tmp` only check from the menu and save nothing, and
-the relaunch after installing keeps the same store. To try installing, run a
+Runs with `APP_STORE` in `/tmp` save nothing, and only check at launch when
+they pretend like this. The relaunch after installing keeps the same store. To try installing, run a
 copy from a scratch folder so your real copy isn't replaced.
 
 ## Signing

@@ -83,13 +83,16 @@ struct UpdatesTests {
         #expect(Updates.isDue(lastChecked: now.addingTimeInterval(3600), now: now), "a clock moved back still checks")
     }
 
-    @Test("A new version is announced once")
-    func notifiesOnce() throws {
+    @Test("Later reminds again after a day; a newer version reminds at once")
+    func reminds() throws {
         let release = try Updates.release(from: reply(tag: "v1.0.2"))
-        #expect(Updates.shouldNotify(release, current: "1.0.1", alreadyNotified: nil))
-        #expect(Updates.shouldNotify(release, current: "1.0.1", alreadyNotified: "1.0.1"))
-        #expect(!Updates.shouldNotify(release, current: "1.0.1", alreadyNotified: "1.0.2"))
-        #expect(!Updates.shouldNotify(release, current: "1.0.2", alreadyNotified: nil))
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let hourAgo = now.addingTimeInterval(-3600), dayAgo = now.addingTimeInterval(-Updates.interval)
+        #expect(Updates.shouldRemind(release, current: "1.0.1", remindedVersion: nil, remindedAt: nil, now: now))
+        #expect(!Updates.shouldRemind(release, current: "1.0.1", remindedVersion: "1.0.2", remindedAt: hourAgo, now: now))
+        #expect(Updates.shouldRemind(release, current: "1.0.1", remindedVersion: "1.0.2", remindedAt: dayAgo, now: now))
+        #expect(Updates.shouldRemind(release, current: "1.0.1", remindedVersion: "1.0.1", remindedAt: hourAgo, now: now))
+        #expect(!Updates.shouldRemind(release, current: "1.0.2", remindedVersion: nil, remindedAt: nil, now: now))
     }
 
     @Test("The summary leaves out the install instructions")
