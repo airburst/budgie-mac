@@ -7,13 +7,16 @@ import Testing
 struct ShortcutTests {
     @Test("Budgie's single keys are replaced by menu shortcuts listed in the glossary")
     func budgieKeys() throws {
+        // Table rows with their cells trimmed, so column padding doesn't matter.
         let glossary = try String(contentsOf: URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appending(path: "docs/GLOSSARY.md"), encoding: .utf8)
+            .split(separator: "\n")
+            .map { $0.split(separator: "|", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) } }
         for (key, title) in Shortcuts.replacingBudgie {
             let shortcut = try #require(Shortcuts.builtIn.first { $0.title == title })
             #expect(!shortcut.modifiers.isEmpty)
-            #expect(glossary.contains("| \(key) | \(title) | \(shortcut.symbols) |"))
+            #expect(glossary.contains(["", key, title, shortcut.symbols, ""]))
         }
         #expect(Shortcuts.builtIn.allSatisfy { !$0.modifiers.isEmpty })
     }
