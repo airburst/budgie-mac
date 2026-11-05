@@ -14,14 +14,19 @@ public enum Updates {
         public let pageURL: URL
         /// The zip that `tools/release.ts` attaches, or the release page when it's missing.
         public let downloadURL: URL
+        /// The zip's `.sha256` file. Without both, the release can only be downloaded, not installed.
+        public let checksumURL: URL?
         public let notes: String
 
-        public init(version: String, pageURL: URL, downloadURL: URL, notes: String) {
+        public init(version: String, pageURL: URL, downloadURL: URL, checksumURL: URL? = nil, notes: String) {
             self.version = version
             self.pageURL = pageURL
             self.downloadURL = downloadURL
+            self.checksumURL = checksumURL
             self.notes = notes
         }
+
+        public var canInstall: Bool { checksumURL != nil && downloadURL != pageURL }
     }
 
     public enum Problem: Error, Equatable { case unreadable, noVersion }
@@ -42,8 +47,9 @@ public enum Updates {
         let version = reply.tag_name.hasPrefix("v") ? String(reply.tag_name.dropFirst()) : reply.tag_name
         guard Version(version) != nil else { throw .noVersion }
         let zip = reply.assets.first { $0.name == "BudgieMac-\(version).zip" }
+        let checksum = reply.assets.first { $0.name == "BudgieMac-\(version).zip.sha256" }
         return Release(version: version, pageURL: reply.html_url, downloadURL: zip?.browser_download_url ?? reply.html_url,
-                       notes: reply.body ?? "")
+                       checksumURL: zip == nil ? nil : checksum?.browser_download_url, notes: reply.body ?? "")
     }
 
     /// True when the release is a later version than the one running.
@@ -67,6 +73,44 @@ public enum Updates {
     public static func summary(of notes: String) -> String {
         let trimmed = notes.components(separatedBy: "\n### Install").first ?? notes
         return trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+/// Install and Relaunch: the checks a downloaded update must pass before it
+/// replaces the running app. The app does the downloading, unzipping and swapping.
+public enum UpdateInstall {
+    public enum Problem: LocalizedError, Equatable {
+        case noChecksum, checksumMismatch, noApp, wrongApp(String), wrongVersion(String), notWritable(String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .noChecksum: "The release has no checksum file to check the download against."
+            case .checksumMismatch: "The download doesn't match the release's checksum."
+            case .noApp: "The download doesn't contain BudgieMac.app."
+            case .wrongApp(let id): "The download is a different app (\(id))."
+            case .wrongVersion(let version): "The download is version \(version), not the one expected."
+            case .notWritable(let folder): "BudgieMac can't replace itself in \(folder)."
+            }
+        }
+    }
+
+    /// The hash from a `shasum -a 256` line: "<64 hex digits>  BudgieMac-1.0.1.zip".
+    public static func expectedChecksum(from text: String) throws(Problem) -> String {
+        guard let first = text.split(whereSeparator: \.isWhitespace).first, first.count == 64,
+              first.allSatisfy(\.isHexDigit) else { throw .noChecksum }
+        return first.lowercased()
+    }
+
+    public static func verifyChecksum(_ actual: String, against text: String) throws(Problem) {
+        guard try expectedChecksum(from: text) == actual.lowercased() else { throw .checksumMismatch }
+    }
+
+    /// The unzipped app must be this app, at the release's version.
+    public static func verifyApp(info: [String: Any], bundleID: String?, version: String) throws(Problem) {
+        let id = info["CFBundleIdentifier"] as? String ?? "unknown"
+        guard id == bundleID else { throw .wrongApp(id) }
+        let found = info["CFBundleShortVersionString"] as? String ?? "unknown"
+        guard found == version else { throw .wrongVersion(found) }
     }
 }
 

@@ -3,8 +3,8 @@ import BudgieMacKit
 import UserNotifications
 
 /// Checks GitHub for a newer release: quietly once a day, with a notification
-/// that has a Download button, or from BudgieMac > Check for Updates…, which
-/// always answers in an alert. The settings belong to this Mac, so they live in
+/// that offers Install and Relaunch (or Download, for a release without a
+/// checksum), or from BudgieMac > Check for Updates…, which always answers in an alert. The settings belong to this Mac, so they live in
 /// UserDefaults, not in the budget data.
 @Observable
 final class UpdateChecker: NSObject {
@@ -16,6 +16,8 @@ final class UpdateChecker: NSObject {
         static let notified = "updates.notifiedVersion"
     }
     nonisolated private static let category = "update"
+    nonisolated private static let downloadCategory = "update.download"
+    nonisolated private static let installAction = "install"
     nonisolated private static let downloadAction = "download"
 
     var automatic = UserDefaults.standard.object(forKey: Key.automatic) as? Bool ?? true {
@@ -31,6 +33,7 @@ final class UpdateChecker: NSObject {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(notified, forKey: Key.notified) } }
     }
     private(set) var checking = false
+    private var installing: Task<Void, Never>?
 
     /// The running version. APP_PRETEND_VERSION=0.1.0 tries the update path.
     static var currentVersion: String {
@@ -45,8 +48,12 @@ final class UpdateChecker: NSObject {
     func prepare() {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
+        let install = UNNotificationAction(identifier: Self.installAction, title: "Install and Relaunch", options: .foreground)
         let download = UNNotificationAction(identifier: Self.downloadAction, title: "Download")
-        center.setNotificationCategories([UNNotificationCategory(identifier: Self.category, actions: [download], intentIdentifiers: [])])
+        center.setNotificationCategories([
+            UNNotificationCategory(identifier: Self.category, actions: [install], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Self.downloadCategory, actions: [download], intentIdentifiers: []),
+        ])
     }
 
     /// At launch, then whenever the app comes forward and a day has passed.
@@ -120,9 +127,10 @@ final class UpdateChecker: NSObject {
         }
         let content = UNMutableNotificationContent()
         content.title = "BudgieMac \(release.version) is available"
-        content.body = "You have \(current). Click to see what's new, or download it now."
-        content.categoryIdentifier = Self.category
-        content.userInfo = ["page": release.pageURL.absoluteString, "download": release.downloadURL.absoluteString]
+        content.body = "You have \(current). Click to see what's new, or \(release.canInstall ? "install it now" : "download it now")."
+        content.categoryIdentifier = release.canInstall ? Self.category : Self.downloadCategory
+        content.userInfo = ["version": release.version, "page": release.pageURL.absoluteString,
+                            "download": release.downloadURL.absoluteString, "checksum": release.checksumURL?.absoluteString ?? ""]
         try? await center.add(UNNotificationRequest(identifier: "update-\(release.version)", content: content, trigger: nil))
     }
 
@@ -133,7 +141,7 @@ final class UpdateChecker: NSObject {
             let summary = Updates.summary(of: release.notes)
             let notes = summary.count > 600 ? summary.prefix(600) + "…" : summary
             alert.informativeText = "You have \(current)." + (notes.isEmpty ? "" : "\n\n\(notes)")
-            alert.addButton(withTitle: "Download")
+            alert.addButton(withTitle: release.canInstall ? "Install and Relaunch" : "Download")
             alert.addButton(withTitle: "Release Notes")
             alert.addButton(withTitle: "Later").keyEquivalent = "\u{1b}"
         } else {
@@ -146,10 +154,65 @@ final class UpdateChecker: NSObject {
         present(alert) { response in
             guard Updates.isNewer(release, than: current) else { return }
             switch response {
-            case .alertFirstButtonReturn: NSWorkspace.shared.open(release.downloadURL)
+            case .alertFirstButtonReturn: self.installOrDownload(release)
             case .alertSecondButtonReturn: NSWorkspace.shared.open(release.pageURL)
             default: break
             }
+        }
+    }
+
+    /// Install and Relaunch, behind a sheet with Cancel. Any failure offers the download instead.
+    func installOrDownload(_ release: Updates.Release) {
+        guard release.canInstall else {
+            NSWorkspace.shared.open(release.downloadURL)
+            return
+        }
+        guard installing == nil else { return }
+        let progress = NSAlert()
+        progress.messageText = "Installing BudgieMac \(release.version)…"
+        progress.informativeText = "BudgieMac reopens when it's done. It backs up your data as it quits, as always."
+        let bar = NSProgressIndicator(frame: NSRect(x: 0, y: 0, width: 240, height: 16))
+        bar.style = .bar
+        bar.isIndeterminate = true
+        bar.startAnimation(nil)
+        progress.accessoryView = bar
+        progress.addButton(withTitle: "Cancel").keyEquivalent = "\u{1b}"
+        let window = NSApp.mainAppWindow
+        let task = Task {
+            do {
+                let installed = try await UpdateInstaller.install(release, replacing: Bundle.main.bundleURL)
+                if let window, let sheet = window.attachedSheet { window.endSheet(sheet, returnCode: .OK) }
+                UpdateInstaller.relaunch(installed)
+            } catch is CancellationError {
+                return
+            } catch let error as URLError where error.code == .cancelled {
+                return
+            } catch {
+                if let window, let sheet = window.attachedSheet { window.endSheet(sheet, returnCode: .OK) }
+                installing = nil
+                showInstallProblem(error, release: release)
+            }
+        }
+        installing = task
+        NSApp.activate()
+        if let window {
+            progress.beginSheetModal(for: window) { response in
+                if response == .alertFirstButtonReturn {
+                    task.cancel()
+                    self.installing = nil
+                }
+            }
+        }
+    }
+
+    private func showInstallProblem(_ error: Error, release: Updates.Release) {
+        let alert = NSAlert()
+        alert.messageText = "Couldn't install BudgieMac \(release.version)"
+        alert.informativeText = "\(error.localizedDescription)\n\nYou can download it and install it yourself instead."
+        alert.addButton(withTitle: "Download")
+        alert.addButton(withTitle: "Cancel").keyEquivalent = "\u{1b}"
+        present(alert) { response in
+            if response == .alertFirstButtonReturn { NSWorkspace.shared.open(release.downloadURL) }
         }
     }
 
@@ -178,12 +241,22 @@ extension UpdateChecker: UNUserNotificationCenterDelegate {
         [.banner, .list]
     }
 
-    /// Download opens the zip; clicking the notification opens the release page.
+    /// Install and Relaunch installs, Download opens the zip, and clicking the
+    /// notification opens the release page.
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        guard response.notification.request.content.categoryIdentifier == Self.category,
+        let content = response.notification.request.content
+        guard [Self.category, Self.downloadCategory].contains(content.categoryIdentifier),
               response.actionIdentifier != UNNotificationDismissActionIdentifier else { return }
-        let key = response.actionIdentifier == Self.downloadAction ? "download" : "page"
-        guard let text = response.notification.request.content.userInfo[key] as? String, let url = URL(string: text) else { return }
-        await MainActor.run { _ = NSWorkspace.shared.open(url) }
+        let url = { (key: String) in (content.userInfo[key] as? String).flatMap(URL.init(string:)) }
+        guard let version = content.userInfo["version"] as? String, let page = url("page"), let download = url("download") else { return }
+        let release = Updates.Release(version: version, pageURL: page, downloadURL: download, checksumURL: url("checksum"), notes: "")
+        let action = response.actionIdentifier
+        await MainActor.run {
+            switch action {
+            case Self.installAction: self.installOrDownload(release)
+            case Self.downloadAction: NSWorkspace.shared.open(release.downloadURL)
+            default: NSWorkspace.shared.open(release.pageURL)
+            }
+        }
     }
 }

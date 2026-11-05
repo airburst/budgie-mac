@@ -27,6 +27,36 @@ struct UpdatesTests {
         let release = try Updates.release(from: reply(tag: "v1.2.0", body: nil))
         #expect(release.downloadURL == release.pageURL)
         #expect(release.notes == "")
+        #expect(!release.canInstall)
+    }
+
+    @Test("A release installs only with both its zip and its checksum")
+    func installable() throws {
+        #expect(try Updates.release(from: reply(tag: "v1.0.1", assets: ["BudgieMac-1.0.1.zip", "BudgieMac-1.0.1.zip.sha256"])).canInstall)
+        #expect(try !Updates.release(from: reply(tag: "v1.0.1", assets: ["BudgieMac-1.0.1.zip"])).canInstall)
+        #expect(try !Updates.release(from: reply(tag: "v1.0.1", assets: ["BudgieMac-1.0.1.zip.sha256"])).canInstall)
+    }
+
+    @Test("The download must match the checksum file")
+    func checksum() throws {
+        let hash = "73d8b88b650b2ac34d511a0f188c1c94a62995954c2e295de676d4b07de5bc96"
+        try UpdateInstall.verifyChecksum(hash.uppercased(), against: "\(hash)  BudgieMac-1.0.1.zip\n")
+        #expect(throws: UpdateInstall.Problem.checksumMismatch) {
+            try UpdateInstall.verifyChecksum(String(repeating: "0", count: 64), against: "\(hash)  BudgieMac-1.0.1.zip")
+        }
+        #expect(throws: UpdateInstall.Problem.noChecksum) { try UpdateInstall.verifyChecksum(hash, against: "<html>Not Found</html>") }
+    }
+
+    @Test("The unzipped app must be BudgieMac at the release's version")
+    func verifiesApp() throws {
+        let id = "net.fairhursts.budgiemac"
+        try UpdateInstall.verifyApp(info: ["CFBundleIdentifier": id, "CFBundleShortVersionString": "1.0.2"], bundleID: id, version: "1.0.2")
+        #expect(throws: UpdateInstall.Problem.wrongApp("com.example.other")) {
+            try UpdateInstall.verifyApp(info: ["CFBundleIdentifier": "com.example.other", "CFBundleShortVersionString": "1.0.2"], bundleID: id, version: "1.0.2")
+        }
+        #expect(throws: UpdateInstall.Problem.wrongVersion("1.0.1")) {
+            try UpdateInstall.verifyApp(info: ["CFBundleIdentifier": id, "CFBundleShortVersionString": "1.0.1"], bundleID: id, version: "1.0.2")
+        }
     }
 
     @Test("A tag that isn't a version, or a reply that isn't a release, is refused")
