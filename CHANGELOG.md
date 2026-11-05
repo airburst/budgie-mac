@@ -1,5 +1,9 @@
 # BudgieMac changelog
 
+## 1.1.1
+
+- BudgieMac checks for updates at every launch and shows the update alert; Later reminds you a day on
+
 ## 1.1.0
 
 - Install and Relaunch: BudgieMac downloads a new version, checks it, replaces itself and reopens, with no quarantine warning
