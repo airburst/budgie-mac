@@ -22,6 +22,16 @@ extension AppModel {
         reconcileFor = account.uuid
     }
 
+    /// After rows arrive in an account being reconciled: ticks a set that adds up
+    /// to the statement when there now is one, otherwise keeps the ticks as they are.
+    func rematchReconcile(_ account: Account) {
+        guard reconcileFor == account.uuid, let reconcile = Reconcile(pendingOn: account) else { return }
+        let (ticked, matched) = reconcile.initialTicks()
+        guard matched else { return }
+        reconcileTicked = ticked
+        reconcileAutoMatched = true
+    }
+
     /// Ticking marks the row cleared, as in Budgie, so the choice survives leaving.
     func setTicked(_ transaction: Transaction, _ on: Bool) {
         if on { reconcileTicked.insert(transaction.persistentModelID) } else { reconcileTicked.remove(transaction.persistentModelID) }

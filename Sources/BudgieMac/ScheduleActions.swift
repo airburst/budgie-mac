@@ -33,6 +33,8 @@ extension AppModel {
     func record(_ schedule: ScheduledTransaction, as draft: TransactionDraft) throws(TransactionDraft.Problem) {
         try Scheduling.record(schedule, as: draft, in: container.mainContext)
         try? container.mainContext.save()
+        // A reconcile under way picks up the new row and tries to match again.
+        for account in [schedule.account, schedule.transferToAccount].compactMap(\.self) { rematchReconcile(account) }
     }
 
     /// S-029: asks, naming the skipped date and the next one.

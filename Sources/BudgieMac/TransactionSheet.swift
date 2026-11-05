@@ -136,7 +136,8 @@ struct TransactionSheet: View {
             loaded = true
             if let editing { draft = TransactionDraft(editing) }
             if case .record(let id) = mode, let schedule = context.model(for: id) as? ScheduledTransaction {
-                draft = Scheduling.draft(for: schedule)
+                // Recording by hand means it was paid today.
+                draft = Scheduling.draft(for: schedule, on: Day.today)
             }
             if case .adjust(_, let amount) = mode {
                 draft.payee = "Reconciliation adjustment"

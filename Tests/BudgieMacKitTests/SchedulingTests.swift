@@ -29,6 +29,15 @@ struct SchedulingTests {
         #expect(rent.nextDueDate.map(Day.string) == "2026-12-01")
     }
 
+    @Test("Recording by hand on a given day dates the transaction that day and still moves the due date on")
+    func recordOnDay() throws {
+        let rent = schedule("FREQ=MONTHLY;BYMONTHDAY=1", due: "2026-11-01")
+        let draft = Scheduling.draft(for: rent, on: day("2026-11-05"), locale: uk)
+        let made = try #require(try Scheduling.record(rent, as: draft, in: context, locale: uk))
+        #expect(Day.string(made.date) == "2026-11-05")
+        #expect(rent.nextDueDate.map(Day.string) == "2026-12-01")
+    }
+
     @Test("Recording a transfer schedule makes a transfer pair")
     func recordTransfer() throws {
         let current = Account(name: "Current"), saver = Account(name: "Saver")

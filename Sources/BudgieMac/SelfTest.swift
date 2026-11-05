@@ -198,6 +198,16 @@ enum SelfTest {
                 Scheduling.skip(subscription, in: context)
                 check("Skip moves the due date on without recording", wallet.transactions.count == before + 1
                       && subscription.nextDueDate.map(Day.string) == "2030-03-15")
+                // Recording into an account being reconciled joins the list and re-matches.
+                model.startReconcile(wallet, date: Day.today, balance: Reconcile(account: wallet, statementDate: Day.today, statementBalance: 0).openingBalance - 9.99)
+                model.reconcileTicked = []
+                model.reconcileAutoMatched = false
+                try? model.record(subscription, as: Scheduling.draft(for: subscription, on: Day.today))
+                let recorded = wallet.transactions.first { $0.payee == "Self-test Subscription" && $0.date == Day.today }
+                check("a recorded schedule joins a reconcile under way and is matched",
+                      recorded.map { Reconcile(pendingOn: wallet)?.eligible.contains($0) == true && model.reconcileTicked.contains($0.persistentModelID) } == true
+                      && model.reconcileAutoMatched)
+                model.stopReconcile(wallet)
                 model.setActive(subscription, false, undoManager: nil)
                 check("a paused schedule is left out of the 7-day summary",
                       Scheduling.dueSoon([subscription], today: Day.parse("2030-03-12")!).count == 0)

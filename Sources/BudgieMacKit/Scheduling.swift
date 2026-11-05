@@ -54,9 +54,9 @@ public enum Scheduling {
     }
 
     /// The Record sheet's starting point: the schedule's payee, amount,
-    /// category, transfer and notes, dated on its due date.
-    public static func draft(for schedule: ScheduledTransaction, locale: Locale = .current) -> TransactionDraft {
-        var draft = TransactionDraft(date: schedule.nextDueDate ?? Day.today)
+    /// category, transfer and notes, dated on its due date unless given a date.
+    public static func draft(for schedule: ScheduledTransaction, on date: Date? = nil, locale: Locale = .current) -> TransactionDraft {
+        var draft = TransactionDraft(date: date ?? schedule.nextDueDate ?? Day.today)
         draft.payee = schedule.payee
         draft.category = schedule.category
         let text = abs(schedule.amount).formatted(.number.precision(.fractionLength(2)).grouping(.never).locale(locale))
