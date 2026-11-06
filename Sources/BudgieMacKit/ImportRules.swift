@@ -33,14 +33,14 @@ public final class ImportRuleBook {
     private let context: ModelContext
     private var rules: [String: [ImportRule]]
     private let payees: [Payee]
-    private let usual: [String: Category]
+    /// Loaded on first use: a correction doesn't need it.
+    private lazy var usual: [String: Category] = Self.usualCategories((try? context.fetch(FetchDescriptor<Transaction>())) ?? [])
 
     public init(context: ModelContext) {
         self.context = context
         let all = (try? context.fetch(FetchDescriptor<ImportRule>())) ?? []
         rules = Dictionary(grouping: all, by: \.bankText)
         payees = (try? context.fetch(FetchDescriptor<Payee>())) ?? []
-        usual = Self.usualCategories((try? context.fetch(FetchDescriptor<Transaction>())) ?? [])
     }
 
     /// The words of the bank text that say who it was, as a rule stores them.
@@ -69,19 +69,24 @@ public final class ImportRuleBook {
         let key = Self.key(bankText)
         let candidates = (rules[key] ?? []).filter { $0.isDeposit == (amount > 0) && $0.count > 0 }
         if let rule = candidates.filter({ $0.amounts.contains(amount) }).max(by: Self.weaker) {
-            return Suggestion(payee: rule.payee, category: rule.category, source: .ruleForAmount, confirmations: rule.count)
+            return Suggestion(payee: rule.payee, category: Self.live(rule.category), source: .ruleForAmount, confirmations: rule.count)
         }
         if let rule = candidates.max(by: Self.weaker) {
             let total = candidates.reduce(0) { $0 + $1.count }
             if Double(rule.count) / Double(total) >= Self.agreement {
-                return Suggestion(payee: rule.payee, category: rule.category, source: .rule, confirmations: rule.count)
+                return Suggestion(payee: rule.payee, category: Self.live(rule.category), source: .rule, confirmations: rule.count)
             }
             return nil // the bank text means different things (a person's name); leave it to you
         }
         if let payee = payeeMatch(bankText) {
-            return Suggestion(payee: payee.payee.name, category: usual[payee.payee.name.lowercased()] ?? payee.payee.category, source: payee.source, confirmations: 0)
+            return Suggestion(payee: payee.payee.name, category: usual[payee.payee.name.lowercased()] ?? Self.live(payee.payee.category), source: payee.source, confirmations: 0)
         }
         return nil
+    }
+
+    /// A deleted category fills in as none.
+    private static func live(_ category: Category?) -> Category? {
+        category?.softDeleted == true ? nil : category
     }
 
     private static func weaker(_ a: ImportRule, _ b: ImportRule) -> Bool {
@@ -205,5 +210,57 @@ public extension ImportRuleBook {
         let payee = payee.trimmingCharacters(in: .whitespaces)
         guard category != nil || payee != row.payee.trimmingCharacters(in: .whitespaces) else { return }
         learn(bankText: row.payee, amount: row.amount, payee: payee, category: category, weight: edited ? Self.editWeight : 1, on: row.date)
+    }
+}
+
+// MARK: Corrections (S-063)
+
+public extension ImportRuleBook {
+    /// Takes back confirmations of a pairing; a rule with none left goes.
+    func forget(bankText: String, amount: Decimal, payee: String, category: Category?, weight: Int = 1) {
+        let key = Self.key(bankText)
+        let isDeposit = amount > 0
+        guard let rule = rules[key]?.first(where: { $0.isDeposit == isDeposit && $0.payee == payee && $0.category?.persistentModelID == category?.persistentModelID }) else { return }
+        rule.count -= weight
+        if rule.count <= 0 {
+            rules[key]?.removeAll { $0 === rule }
+            context.delete(rule)
+        }
+    }
+
+    /// You changed an imported transaction's payee or category: the old
+    /// pairing loses one confirmation and the new one gains a change's worth.
+    /// Returns false when there's nothing to learn (not imported, or no change).
+    @discardableResult
+    func relearn(_ transaction: Transaction, was payee: String, _ category: Category?) -> Bool {
+        guard let bankText = transaction.bankText,
+              payee != transaction.payee || category?.persistentModelID != transaction.category?.persistentModelID else { return false }
+        forget(bankText: bankText, amount: transaction.amount, payee: payee, category: category)
+        learn(bankText: bankText, amount: transaction.amount, payee: transaction.payee, category: transaction.category, weight: Self.editWeight, on: transaction.date)
+        return true
+    }
+
+    /// Undoes `relearn`.
+    func unlearn(_ transaction: Transaction, was payee: String, _ category: Category?) {
+        guard let bankText = transaction.bankText else { return }
+        forget(bankText: bankText, amount: transaction.amount, payee: transaction.payee, category: transaction.category, weight: Self.editWeight)
+        learn(bankText: bankText, amount: transaction.amount, payee: payee, category: category, on: transaction.date)
+    }
+
+    /// A payee was renamed or merged: its rules follow, merging any that now match.
+    static func renamePayee(_ old: String, to new: String, in context: ModelContext) {
+        guard old != new else { return }
+        let all = (try? context.fetch(FetchDescriptor<ImportRule>())) ?? []
+        for rule in all where rule.payee == old {
+            if let same = all.first(where: { $0 !== rule && $0.payee == new && $0.bankText == rule.bankText && $0.isDeposit == rule.isDeposit
+                && $0.category?.persistentModelID == rule.category?.persistentModelID && !$0.isDeleted }) {
+                same.count += rule.count
+                same.lastUsed = max(same.lastUsed, rule.lastUsed)
+                same.amounts = Array((same.amounts + rule.amounts.filter { !same.amounts.contains($0) }).prefix(amountsKept))
+                context.delete(rule)
+            } else {
+                rule.payee = new
+            }
+        }
     }
 }

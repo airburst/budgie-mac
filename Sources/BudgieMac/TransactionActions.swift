@@ -46,10 +46,14 @@ extension AppModel {
         let before = TransactionValues(transaction)
         let partner = Transfers.partner(of: transaction, in: context)
         let partnerBefore = partner.map(TransactionValues.init)
+        let payeeBefore = transaction.payee, categoryBefore = transaction.category
         try draft.apply(to: transaction, in: context)
         Transfers.syncPartner(of: transaction, in: context)
+        // S-063: changing an imported transaction teaches the next import.
+        let relearned = ImportRuleBook(context: context).relearn(transaction, was: payeeBefore, categoryBefore)
         try? context.save()
         undoManager?.registerUndo(withTarget: self) { _ in
+            if relearned { ImportRuleBook(context: context).unlearn(transaction, was: payeeBefore, categoryBefore) }
             before.restore(transaction, in: context)
             if let partner, let partnerBefore { partnerBefore.restore(partner, in: context) }
             try? context.save()

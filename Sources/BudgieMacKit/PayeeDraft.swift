@@ -55,6 +55,8 @@ public enum PayeeEditing {
         if updatingTransactions, oldName != newName {
             for transaction in transactions(named: oldName, in: context) { transaction.payee = newName }
         }
+        // S-063: future imports use the new name.
+        ImportRuleBook.renamePayee(oldName, to: newName, in: context)
         if let target {
             if target.category == nil { target.category = draft.category }
             if target.amount == nil { target.amount = draft.parsedAmount }

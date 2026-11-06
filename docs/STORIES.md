@@ -63,6 +63,9 @@ Depends: S-061
 Acceptance:
 - [unit] Editing an imported transaction's payee or category updates the rule for its bank text.
 - [self] Change an imported Amazon row to Fitness; importing the same text again suggests Fitness when that is now the majority.
+- [self] Undo Edit Transaction takes the change back out of the rules.
+- [unit] Renaming or merging a payee renames its rules; a rule whose category was deleted fills in no category.
+Status: done (the old pairing loses one confirmation, the new one gains three; editing transactions you typed in yourself teaches nothing)
 
 ### S-064 Review and edit import rules in Settings
 As the user, I open Settings > Import Rules to see what BudgieMac has learned and fix or delete a wrong rule.

@@ -281,6 +281,22 @@ enum SelfTest {
                 check("the row imports with the payee and category shown", imported?.payee == "Self-test Cafe" && imported?.category === category)
                 let payees = (try? context.fetch(FetchDescriptor<Payee>())) ?? []
                 check("no payee is added for bank text that matched a payee", !payees.contains { $0.name.uppercased().contains("SELFTEST CAF") })
+
+                // S-063: recategorising an imported transaction changes what the next import suggests; Undo changes it back.
+                if let imported, let other = try? context.fetch(FetchDescriptor<Category>()).first(where: { !$0.softDeleted && $0.kind == .expense && $0 !== category }) {
+                    var draft = TransactionDraft(imported, locale: Locale(identifier: "en_US_POSIX"))
+                    draft.category = other
+                    let undoEdit = UndoManager()
+                    undoEdit.groupsByEvent = false
+                    undoEdit.beginUndoGrouping()
+                    try? model.edit(imported, with: draft, undoManager: undoEdit)
+                    undoEdit.endUndoGrouping()
+                    let afterEdit = ImportRuleBook(context: context).suggestion(for: "SUMUP *SELFTEST CAF", amount: -2)
+                    check("recategorising an imported transaction changes the next suggestion", afterEdit?.category === other)
+                    undoEdit.undo()
+                    let afterUndo = ImportRuleBook(context: context).suggestion(for: "SUMUP *SELFTEST CAF", amount: -2)
+                    check("Undo Edit Transaction puts the suggestion back", afterUndo?.category === category && imported.category === category)
+                }
             }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.

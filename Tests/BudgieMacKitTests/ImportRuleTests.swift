@@ -152,5 +152,64 @@ struct ImportRuleTests {
         book.learn(imported: row, payee: "Big Supermarket", category: nil, edited: true)
         #expect(try context.fetch(FetchDescriptor<ImportRule>()).first?.count == ImportRuleBook.editWeight)
     }
+
+    @Test("S-063: changing an imported transaction moves a confirmation, and Undo moves it back")
+    func relearn() throws {
+        let household = category("Household"), fitness = category("Fitness")
+        let book = ImportRuleBook(context: context)
+        let transaction = Transaction(account: nil, date: day("2026-10-01"), payee: "Amazon", amount: -20, category: household)
+        transaction.bankText = "AMZNMktplace*BB9G4"
+        context.insert(transaction)
+        for _ in 0..<2 { book.learn(bankText: "AMZNMktplace*BB9G4", amount: -20, payee: "Amazon", category: household) }
+
+        transaction.category = fitness
+        #expect(book.relearn(transaction, was: "Amazon", household))
+        var rules = try context.fetch(FetchDescriptor<ImportRule>())
+        #expect(rules.first { $0.category === household }?.count == 1)
+        #expect(rules.first { $0.category === fitness }?.count == ImportRuleBook.editWeight)
+        #expect(book.suggestion(for: "AMZNMktplace*Q1W2E", amount: -7)?.category === fitness)
+
+        book.unlearn(transaction, was: "Amazon", household)
+        try context.save()
+        rules = try context.fetch(FetchDescriptor<ImportRule>())
+        #expect(rules.count == 1)
+        #expect(rules.first?.category === household && rules.first?.count == 2)
+    }
+
+    @Test("S-063: a transaction that wasn't imported, or didn't change, teaches nothing")
+    func relearnOnlyImported() throws {
+        let book = ImportRuleBook(context: context)
+        let typed = Transaction(account: nil, payee: "Coop", amount: -5)
+        context.insert(typed)
+        typed.payee = "Co-op"
+        #expect(!book.relearn(typed, was: "Coop", nil))
+        typed.bankText = "CO-OP GROUP 070590"
+        #expect(!book.relearn(typed, was: "Co-op", nil))
+        #expect(try context.fetch(FetchDescriptor<ImportRule>()).isEmpty)
+    }
+
+    @Test("S-063: rules follow a renamed payee and merge with its rules")
+    func rename() throws {
+        let groceries = category("Groceries")
+        let book = ImportRuleBook(context: context)
+        book.learn(bankText: "CO-OP GROUP 070590", amount: -5, payee: "Coop", category: groceries)
+        book.learn(bankText: "CO-OP GROUP 070590", amount: -6, payee: "Co-op", category: groceries)
+        ImportRuleBook.renamePayee("Coop", to: "Co-op", in: context)
+        try context.save()
+        let rules = try context.fetch(FetchDescriptor<ImportRule>())
+        #expect(rules.count == 1)
+        #expect(rules.first?.payee == "Co-op" && rules.first?.count == 2)
+        #expect(Set(rules.first?.amounts ?? []) == [-5, -6])
+    }
+
+    @Test("S-063: a rule whose category was deleted fills in no category")
+    func deletedCategory() {
+        let old = category("Old")
+        let book = ImportRuleBook(context: context)
+        book.learn(bankText: "VODAFONE LTD", amount: -10, payee: "Vodafone", category: old)
+        old.softDeleted = true
+        let suggestion = book.suggestion(for: "VODAFONE LTD", amount: -10)
+        #expect(suggestion?.payee == "Vodafone" && suggestion?.category == nil)
+    }
 }
 
