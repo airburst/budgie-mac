@@ -7,6 +7,7 @@ import SwiftUI
 /// sizes to its content.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @Query private var importRules: [ImportRule]
 
     var body: some View {
         @Bindable var model = model
@@ -29,14 +30,16 @@ struct SettingsView: View {
             case .appearance: AppearanceSettings()
             case .shortcuts: ShortcutSettings()
             case .backups: BackupSettings()
+            case .importRules: ImportRuleSettings()
             }
         }
         .formStyle(.grouped)
-        .modifier(TabSizing(scrolls: tab == .shortcuts))
+        .modifier(TabSizing(scrolls: tab == .shortcuts || (tab == .importRules && !importRules.isEmpty)))
     }
 }
 
-/// Tabs fit their content; the long shortcut list scrolls in a fixed height.
+/// Tabs fit their content; the long shortcut and rule lists scroll in a fixed
+/// height, so searching rules doesn't resize the window.
 private struct TabSizing: ViewModifier {
     let scrolls: Bool
 
@@ -51,7 +54,7 @@ private struct TabSizing: ViewModifier {
 
 /// The Settings tabs. Snapshot mode walks through every case.
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case general, appearance, shortcuts, backups
+    case general, appearance, shortcuts, backups, importRules
 
     var id: String { rawValue }
 
@@ -61,6 +64,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .appearance: "Accent"
         case .shortcuts: "Shortcuts"
         case .backups: "Backups"
+        case .importRules: "Import Rules"
         }
     }
 
@@ -70,6 +74,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .appearance: "paintpalette"
         case .shortcuts: "keyboard"
         case .backups: "externaldrive"
+        case .importRules: "tray.and.arrow.down"
         }
     }
 }

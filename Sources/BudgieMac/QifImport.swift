@@ -300,3 +300,118 @@ private struct AmountCell: View {
         if amount > 0 { Text(Money.string(amount, currency: currency)).monospacedDigit() }
     }
 }
+
+/// S-064: Settings > Import Rules. What QIF imports have learned, one row per
+/// bank text and payee; change a category or delete a rule, with Undo.
+struct ImportRuleSettings: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
+    @Query(sort: [SortDescriptor(\ImportRule.bankText), SortDescriptor(\ImportRule.count, order: .reverse)]) private var rules: [ImportRule]
+    @Query(filter: #Predicate<Category> { !$0.softDeleted }) private var categories: [Category]
+    @State private var search = ""
+
+    var body: some View {
+        if rules.isEmpty {
+            Section {
+                ContentUnavailableView("No Import Rules", systemImage: "tray.and.arrow.down",
+                                       description: Text("When you import a QIF file, BudgieMac learns what each bank text means from the transactions you entered and the changes you make, and fills in the next import."))
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            Section {
+                TextField("Search", text: $search, prompt: Text("Bank text, payee or category"))
+            } footer: {
+                Text("Rules fill in the payee and category of imported QIF rows. A rule is used when most of what was learned for its bank text agrees.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            let shown = rules.filter(matches)
+            Section(Words.count(shown.count, "Rule")) {
+                if shown.isEmpty {
+                    ContentUnavailableView.search(text: search)
+                        .frame(maxWidth: .infinity)
+                }
+                ForEach(shown) { rule in
+                    ImportRuleRow(rule: rule, categories: categories)
+                }
+            }
+        }
+    }
+
+    private func matches(_ rule: ImportRule) -> Bool {
+        let text = search.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return true }
+        return rule.bankText.localizedStandardContains(text) || rule.payee.localizedStandardContains(text)
+            || (rule.category?.path.localizedStandardContains(text) ?? false)
+    }
+}
+
+private struct ImportRuleRow: View {
+    let rule: ImportRule
+    let categories: [Category]
+    @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
+
+    var body: some View {
+        HStack(spacing: Space.sm) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(rule.bankText).lineLimit(1).help(rule.bankText)
+                Text("\(rule.payee) · \(rule.isDeposit ? "money in" : "money out") · \(confirmed)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: Space.sm)
+            Picker("Category", selection: Binding(get: { rule.category?.softDeleted == true ? nil : rule.category },
+                                                  set: { model.setCategory($0, of: rule, undoManager: undoManager) })) {
+                Text("None").tag(Category?.none)
+                ForEach(Suggestions.categories(categories, matching: "")) { Text($0.path).tag(Category?.some($0)) }
+            }
+            .labelsHidden()
+            .fixedSize()
+            Button("Delete Rule", systemImage: "minus.circle") { model.deleteImportRule(rule, undoManager: undoManager) }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Delete this rule; the next import learns again")
+        }
+        .contextMenu {
+            Button("Delete Rule") { model.deleteImportRule(rule, undoManager: undoManager) }
+        }
+    }
+
+    private var confirmed: String {
+        rule.count == 1 ? "confirmed once" : "confirmed \(rule.count.formatted()) times"
+    }
+}
+
+extension AppModel {
+    /// S-064: deletes a rule, with Undo bringing it back as it was.
+    func deleteImportRule(_ rule: ImportRule, undoManager: UndoManager?) {
+        let context = container.mainContext
+        let saved = (uuid: rule.uuid, bankText: rule.bankText, isDeposit: rule.isDeposit, payee: rule.payee, category: rule.category,
+                     count: rule.count, amountsText: rule.amountsText, lastUsed: rule.lastUsed, createdAt: rule.createdAt)
+        context.delete(rule)
+        try? context.save()
+        undoManager?.registerUndo(withTarget: self) { model in
+            let back = ImportRule(bankText: saved.bankText, isDeposit: saved.isDeposit, payee: saved.payee, category: saved.category)
+            back.uuid = saved.uuid
+            back.count = saved.count
+            back.amountsText = saved.amountsText
+            back.lastUsed = saved.lastUsed
+            back.createdAt = saved.createdAt
+            context.insert(back)
+            try? context.save()
+        }
+        undoManager?.setActionName("Delete Rule")
+    }
+
+    /// S-064: files a rule under another category, with Undo.
+    func setCategory(_ category: Category?, of rule: ImportRule, undoManager: UndoManager?) {
+        let before = rule.category
+        guard before?.persistentModelID != category?.persistentModelID else { return }
+        let context = container.mainContext
+        rule.category = category
+        try? context.save()
+        undoManager?.registerUndo(withTarget: self) { model in model.setCategory(before, of: rule, undoManager: undoManager) }
+        undoManager?.setActionName("Change Rule Category")
+    }
+}

@@ -103,6 +103,22 @@ enum SeedData {
         schedule(card, "Gym Membership", "-35", "FREQ=MONTHLY;BYMONTHDAY=16", due: 20, active: false)
         schedule(current, "Car Insurance", "-480", "FREQ=YEARLY", due: 60)
 
+        // S-064: import rules, one bank text with two meanings.
+        for (text, isDeposit, payee, category, count, amounts) in [
+            ("POWERCO ENERGY", false, "Power Co", utilities, 6, ["-84.10", "-79.55"]),
+            ("COFFEE HOUSE", false, "Coffee", eatingOut, 4, ["-3.40"]),
+            ("PAYROLL BIGCORP", true, "Employer Ltd", salary, 3, ["2345.67"]),
+            ("A SAMPLE", false, "Rainy Day Saver", Category?.none, 3, ["-200"]),
+            ("A SAMPLE", false, "Coffee", eatingOut, 1, ["-12.50"]),
+            ("BOOKSHOP", false, "Bookshop", Category?.none, 2, ["-18.99"]),
+        ] as [(String, Bool, String, Category?, Int, [String])] {
+            let rule = ImportRule(bankText: text, isDeposit: isDeposit, payee: payee, category: category)
+            rule.count = count
+            rule.amounts = amounts.map(money)
+            rule.lastUsed = day(10)
+            context.insert(rule)
+        }
+
         // Envelopes for September and October, with one overspent and money moved.
         let food = Envelope(name: "Groceries", sortOrder: 0)
         let bills = Envelope(name: "Bills", sortOrder: 1)

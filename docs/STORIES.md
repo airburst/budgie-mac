@@ -74,6 +74,12 @@ Acceptance:
 - [snap] One row per rule: bank text, payee, category, times confirmed; a search field; Delete with Undo.
 - [snap] With no rules: an empty state that says rules are learned from QIF imports.
 - [self] Deleting a rule stops it filling the next import.
+UX:
+- Flow: BudgieMac > Settings… (⌘,) > Import Rules -> search -> change a category in the row's menu, or Delete Rule (minus button or context menu) -> Edit > Undo puts it back
+- Surface: a Settings tab (one grouped Form); fixed height with rules, so typing a search doesn't resize the window; sized to content when empty
+- States: empty "No Import Rules" with what teaches them; no search results shows the system search empty state
+- Words: "Bank text, payee or category", "Rainy Day Saver · money out · confirmed 3 times", "Delete Rule", tooltip "Delete this rule; the next import learns again", "Undo Delete Rule", "Undo Change Rule Category"
+Status: done
 
 ### S-065 Keep import rules in backups and exports
 As the user, restoring a backup or moving to another Mac keeps what imports have learned.

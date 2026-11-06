@@ -297,6 +297,20 @@ enum SelfTest {
                     let afterUndo = ImportRuleBook(context: context).suggestion(for: "SUMUP *SELFTEST CAF", amount: -2)
                     check("Undo Edit Transaction puts the suggestion back", afterUndo?.category === category && imported.category === category)
                 }
+
+                // S-064: deleting a rule in Settings stops it filling the next import; Undo brings it back.
+                let undoDelete = UndoManager()
+                undoDelete.groupsByEvent = false
+                let cafeRules = (try? context.fetch(FetchDescriptor<ImportRule>()))?.filter { $0.bankText == "SELFTEST CAF" } ?? []
+                undoDelete.beginUndoGrouping()
+                for rule in cafeRules { model.deleteImportRule(rule, undoManager: undoDelete) }
+                undoDelete.endUndoGrouping()
+                let afterDelete = ImportRuleBook(context: context).suggestion(for: "SUMUP *SELFTEST CAF", amount: -2)
+                check("a deleted rule no longer fills the next import", afterDelete?.source != .rule && afterDelete?.source != .ruleForAmount)
+                check("Undo is named Undo Delete Rule", undoDelete.undoActionName == "Delete Rule")
+                undoDelete.undo()
+                let restored = ImportRuleBook(context: context).suggestion(for: "SUMUP *SELFTEST CAF", amount: -2)
+                check("Undo Delete Rule brings the rule back", restored?.source == .rule && restored?.category === category)
             }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.

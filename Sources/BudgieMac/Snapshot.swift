@@ -280,6 +280,17 @@ enum Snapshot {
                         capture(to: "\(dir)/settings-\(tab.rawValue)-\(mode).png", window: settings)
                     }
                 }
+                // S-064: Import Rules before any import has taught anything.
+                let context = model.container.mainContext
+                for rule in (try? context.fetch(FetchDescriptor<ImportRule>())) ?? [] { context.delete(rule) }
+                try? context.save()
+                model.settingsTab = .importRules
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    try? await Task.sleep(for: .seconds(0.8))
+                    let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet }
+                    capture(to: "\(dir)/settings-importRules-empty-\(mode).png", window: settings)
+                }
             }
             print("SNAPSHOT done \(dir)")
             // An open sheet refuses terminate, and the run would wait forever.
