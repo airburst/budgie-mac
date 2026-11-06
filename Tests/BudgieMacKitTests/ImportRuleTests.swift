@@ -111,4 +111,46 @@ struct ImportRuleTests {
         #expect(typed.bankText == "CO-OP GROUP 070590")
         #expect(try context.fetch(FetchDescriptor<ImportRule>()).first?.count == 1)
     }
+
+    @Test("S-062: a file's duplicates teach its new rows, and the preview saves nothing")
+    func preview() throws {
+        let groceries = category("Groceries")
+        let typed = Transaction(account: nil, date: day("2026-10-25"), payee: "Corner Grocer", amount: Decimal(string: "-81.02")!, category: groceries)
+        context.insert(typed)
+        try context.save()
+        let rows = [
+            Qif.Row(date: day("2026-10-25"), payee: "CORNER GROCER 0412", amount: Decimal(string: "-81.02")!),
+            Qif.Row(date: day("2026-10-28"), payee: "CORNER GROCER 0413", amount: Decimal(string: "-23.40")!),
+            Qif.Row(date: day("2026-10-29"), payee: "BIG SUPERMARKET 22", amount: -108),
+        ]
+        let matches = Qif.match(rows, existing: [typed], lastReconciled: nil)
+        let previews = ImportRuleBook.preview(matches, in: container)
+        #expect(previews[0] == nil) // the duplicate itself
+        #expect(previews[1] == .init(payee: "Corner Grocer", categoryID: groceries.persistentModelID, source: .rule, confirmations: 1))
+        #expect(previews[2] == nil)
+        #expect(try context.fetch(FetchDescriptor<ImportRule>()).isEmpty)
+        #expect(typed.bankText == nil)
+    }
+
+    @Test("S-062: your changes in the sheet count more than a learned match")
+    func edits() {
+        let household = category("Household"), fitness = category("Fitness")
+        let book = ImportRuleBook(context: context)
+        let row = Qif.Row(date: day("2026-10-01"), payee: "AMZNMktplace*BB9G4", amount: -20)
+        book.learn(imported: row, payee: "Amazon", category: household, edited: false)
+        book.learn(imported: row, payee: "Amazon", category: household, edited: false)
+        book.learn(imported: row, payee: "Amazon", category: fitness, edited: true)
+        #expect(book.suggestion(for: "AMZNMktplace*Q1W2E", amount: -7)?.category === fitness)
+    }
+
+    @Test("S-062: a row imported as its bank text with no category teaches nothing")
+    func blankTeachesNothing() throws {
+        let book = ImportRuleBook(context: context)
+        let row = Qif.Row(date: day("2026-10-01"), payee: "BIG SUPERMARKET 22", amount: -108)
+        book.learn(imported: row, payee: "BIG SUPERMARKET 22", category: nil, edited: false)
+        #expect(try context.fetch(FetchDescriptor<ImportRule>()).isEmpty)
+        book.learn(imported: row, payee: "Big Supermarket", category: nil, edited: true)
+        #expect(try context.fetch(FetchDescriptor<ImportRule>()).first?.count == ImportRuleBook.editWeight)
+    }
 }
+

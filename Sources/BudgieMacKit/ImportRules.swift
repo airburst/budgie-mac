@@ -97,7 +97,7 @@ public final class ImportRuleBook {
         guard !words.isEmpty else { return nil }
         // The longest payee the cleaned text starts with: "SAINSBURYS PETROL" -> Sainsburys.
         let starts = Set(words.indices.map { words[...$0].joined() })
-        let keyed = payees.map { (payee: $0, key: Qif.squashed($0.name)) }.filter { $0.key.count >= 3 }
+        let keyed = payees.map { (payee: $0, key: Qif.payeeKey($0.name)) }.filter { $0.key.count >= 3 }
         if let hit = keyed.filter({ starts.contains($0.key) }).max(by: { $0.key.count < $1.key.count }) {
             return (hit.payee, .payeeWord)
         }
@@ -156,5 +156,54 @@ public final class ImportRuleBook {
         guard transaction.bankText == nil else { return }
         transaction.bankText = row.payee
         learn(bankText: row.payee, amount: row.amount, payee: transaction.payee, category: transaction.category, on: row.date)
+    }
+}
+
+// MARK: Review (S-062)
+
+public extension ImportRuleBook {
+    /// A change you make in the review sheet counts this many confirmations.
+    static let editWeight = 3
+
+    /// A suggestion for one row, with the category by id so the sheet can use its own context.
+    struct Preview: Equatable {
+        public var payee: String
+        public var categoryID: PersistentIdentifier?
+        public var source: Source
+        public var confirmations: Int
+    }
+
+    /// Suggestions for the new rows of a file, keyed by row id. The file's
+    /// duplicates teach first, in a scratch context that is never saved, so
+    /// Cancel leaves nothing behind.
+    static func preview(_ matches: [Qif.Match], in container: ModelContainer) -> [Int: Preview] {
+        let scratch = ModelContext(container)
+        scratch.autosaveEnabled = false
+        let book = ImportRuleBook(context: scratch)
+        let duplicates = Set(matches.compactMap(\.matched?.uuid))
+        if !duplicates.isEmpty {
+            let transactions = (try? scratch.fetch(FetchDescriptor<Transaction>(predicate: #Predicate { duplicates.contains($0.uuid) }))) ?? []
+            let byUUID = Dictionary(transactions.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
+            for match in matches {
+                if let uuid = match.matched?.uuid, let transaction = byUUID[uuid] { book.learn(from: match.row, matched: transaction) }
+            }
+        }
+        var previews: [Int: Preview] = [:]
+        for match in matches where match.matched == nil {
+            if let suggestion = book.suggestion(for: match.row.payee, amount: match.row.amount) {
+                previews[match.id] = Preview(payee: suggestion.payee, categoryID: suggestion.category?.persistentModelID,
+                                             source: suggestion.source, confirmations: suggestion.confirmations)
+            }
+        }
+        scratch.rollback()
+        return previews
+    }
+
+    /// Learns from an imported row: what you chose, with your changes counting more.
+    /// A row you left as the bank text with no category teaches nothing.
+    func learn(imported row: Qif.Row, payee: String, category: Category?, edited: Bool) {
+        let payee = payee.trimmingCharacters(in: .whitespaces)
+        guard category != nil || payee != row.payee.trimmingCharacters(in: .whitespaces) else { return }
+        learn(bankText: row.payee, amount: row.amount, payee: payee, category: category, weight: edited ? Self.editWeight : 1, on: row.date)
     }
 }

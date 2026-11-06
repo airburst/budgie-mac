@@ -270,6 +270,17 @@ enum SelfTest {
                 model.importQif(Qif.match(first, existing: wallet.transactions, lastReconciled: nil), into: wallet, undoManager: nil)
                 let rules = (try? context.fetch(FetchDescriptor<ImportRule>()))?.filter { $0.payee == "Self-test Cafe" } ?? []
                 check("importing the same file again learns nothing new", rules.count == 1 && rules.first?.count == 1)
+
+                // S-062: a new row imports with the payee and category the sheet shows, adding no payee.
+                let later = (try? Qif.parse("!Type:Bank\nD01/04/2031\nPSUMUP *SELFTEST CAF\nT-3.80\n^"))?.rows ?? []
+                let matches = Qif.match(later, existing: wallet.transactions, lastReconciled: nil)
+                let choices = model.qifChoices(for: matches, in: wallet)
+                check("the review sheet fills a new row from what it learned", choices[0]?.payee == "Self-test Cafe" && choices[0]?.category === category)
+                model.importQif(matches, choices: choices, into: wallet, undoManager: nil)
+                let imported = wallet.transactions.first { $0.bankText == "SUMUP *SELFTEST CAF" && $0.amount == Decimal(string: "-3.80")! }
+                check("the row imports with the payee and category shown", imported?.payee == "Self-test Cafe" && imported?.category === category)
+                let payees = (try? context.fetch(FetchDescriptor<Payee>())) ?? []
+                check("no payee is added for bank text that matched a payee", !payees.contains { $0.name.uppercased().contains("SELFTEST CAF") })
             }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.

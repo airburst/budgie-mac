@@ -47,9 +47,15 @@ Depends: S-061
 Acceptance:
 - [unit] Duplicates in the file teach its new rows before the sheet suggests; Cancel saves nothing it learned.
 - [snap] Payee and Category columns are filled where a rule or payee matched and blank otherwise; the bank text shows under the payee.
-- [snap] A filled row has a small symbol with the tooltip "Learned from 14 earlier imports".
+- [snap] A filled row has a history symbol (clock.arrow.circlepath) with the tooltip "Learned from your transactions, confirmed 14 times" or "Matches your payee Sainsburys".
 - [unit] A change made in the sheet counts more than a learned match.
 - [self] Imported rows get the payee and category shown; no payee is added for bank text that matched an existing payee.
+UX:
+- Flow: File > Import QIF… (⌥⌘I) or drop on a register -> rows arrive filled -> change a payee (type-ahead) or category (menu) -> Import; Undo removes the rows, what was learned stays
+- Surface: the existing review sheet, 1080 pt wide (one short task that must finish or cancel)
+- States: blank row shows its bank text and None; unticked rows are dimmed and can't be edited; the bank text shows under a payee that differs from it, and in the payee's tooltip
+- Words: "Learned from your transactions, confirmed once", "Matches your payee The Noodle Bar", "Bank text: ZETTLE_*THE NOODLE"
+Status: done (a row you import teaches with weight 1, a row you changed with weight 3; a row left as its bank text with no category teaches nothing)
 
 ### S-063 Learn when I recategorise an imported transaction
 As the user, when I change the payee or category of an imported transaction in the register, the next import uses my change.

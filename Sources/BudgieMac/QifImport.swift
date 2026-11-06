@@ -46,9 +46,10 @@ extension AppModel {
         }
     }
 
-    /// Adds the ticked rows to the account, with one Undo, and learns what
-    /// each duplicate's bank text means from the transaction it matched (S-061).
-    func importQif(_ matches: [Qif.Match], into account: Account, undoManager: UndoManager?) {
+    /// Adds the ticked rows to the account as you chose them, with one Undo.
+    /// Learns what each bank text means from the duplicates' transactions
+    /// (S-061) and from the rows you import, your changes counting more (S-062).
+    func importQif(_ matches: [Qif.Match], choices: [Int: QifChoice] = [:], into account: Account, undoManager: UndoManager?) {
         let context = container.mainContext
         let book = ImportRuleBook(context: context)
         let existing = Dictionary(account.transactions.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
@@ -56,15 +57,21 @@ extension AppModel {
             if let uuid = match.matched?.uuid, let transaction = existing[uuid] { book.learn(from: match.row, matched: transaction) }
         }
         var added: [Transaction] = []
-        for row in matches.filter(\.checked).map(\.row) {
+        for match in matches where match.checked {
+            let row = match.row
+            let choice = choices[match.id]
             var draft = TransactionDraft(date: row.date)
-            draft.payee = row.payee
+            draft.payee = choice?.payee ?? row.payee
+            draft.category = choice?.category
             draft.notes = row.memo ?? ""
             let text = abs(row.amount).formatted(.number.precision(.fractionLength(2)).grouping(.never).locale(Locale(identifier: "en_US_POSIX")))
             if row.amount < 0 { draft.withdrawal = text } else { draft.deposit = text }
             if let transaction = try? draft.add(to: account, in: context, locale: Locale(identifier: "en_US_POSIX")) {
                 transaction.bankText = row.payee
                 added.append(transaction)
+                if match.matched == nil {
+                    book.learn(imported: row, payee: transaction.payee, category: transaction.category, edited: choice?.edited ?? false)
+                }
             }
         }
         try? context.save()
@@ -74,15 +81,38 @@ extension AppModel {
     }
 }
 
+/// What a QIF row will be imported as (S-062): filled from a rule, a payee,
+/// or the transaction a duplicate matched, and changed by you.
+struct QifChoice: Equatable {
+    var payee: String
+    var category: Category?
+    var source: ImportRuleBook.Source?
+    var confirmations = 0
+    var edited = false
+
+    /// Hover text for a filled row: where the payee and category came from.
+    var help: String? {
+        switch source {
+        case .ruleForAmount, .rule: "Learned from your transactions, confirmed \(confirmations == 1 ? "once" : "\(confirmations.formatted()) times")"
+        case .payeeName, .payeeWord, .nearPayee: "Matches your payee \(payee)"
+        case nil: nil
+        }
+    }
+}
+
 /// S-055: tick the rows to import; duplicates and reconciled dates start unticked.
+/// S-062: each row shows the payee and category it will get, and you can change them.
 struct QifReviewSheet: View {
     let review: QifReview
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Account> { !$0.softDeleted }, sort: \Account.name) private var accounts: [Account]
+    @Query(filter: #Predicate<Category> { !$0.softDeleted }) private var categories: [Category]
+    @Query(sort: \Payee.name) private var payees: [Payee]
     @State private var account: Account?
     @State private var matches: [Qif.Match] = []
+    @State private var choices: [Int: QifChoice] = [:]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -103,16 +133,18 @@ struct QifReviewSheet: View {
                 }
                 .width(24)
                 TableColumn("Status") { (match: Qif.Match) in StatusBadge(match: match, currency: currency) }
-                    .width(min: 120, ideal: 240)
+                    .width(min: 120, ideal: 250)
                 TableColumn("Date") { (match: Qif.Match) in Text(Day.formatted(match.row.date)).monospacedDigit() }
-                    .width(min: 80, ideal: 96, max: 120)
-                TableColumn("Payee") { (match: Qif.Match) in Text(match.row.payee).lineLimit(1).help(match.row.payee) }
+                    .width(min: 80, ideal: 88, max: 120)
+                TableColumn("Payee") { (match: Qif.Match) in payeeCell(match) }
+                    .width(min: 140, ideal: 190)
+                TableColumn("Category") { (match: Qif.Match) in categoryCell(match) }
                     .width(min: 120, ideal: 170)
                 TableColumn("Withdrawal") { (match: Qif.Match) in AmountCell(amount: -match.row.amount, currency: currency) }
-                    .width(min: 80, ideal: 100, max: 140)
+                    .width(min: 80, ideal: 96, max: 140)
                     .alignment(.trailing)
                 TableColumn("Deposit") { (match: Qif.Match) in AmountCell(amount: match.row.amount, currency: currency) }
-                    .width(min: 80, ideal: 100, max: 140)
+                    .width(min: 80, ideal: 96, max: 140)
                     .alignment(.trailing)
             }
         }
@@ -122,13 +154,13 @@ struct QifReviewSheet: View {
             ToolbarItem(placement: .confirmationAction) {
                 let count = matches.filter(\.checked).count
                 Button(count == 0 ? "Import" : "Import \(Words.count(count, "Transaction").capitalized)") {
-                    if let account { model.importQif(matches, into: account, undoManager: undoManager) }
+                    if let account { model.importQif(matches, choices: choices, into: account, undoManager: undoManager) }
                     dismiss()
                 }
                 .disabled(account == nil || count == 0)
             }
         }
-        .frame(width: 880, height: 520)
+        .frame(width: 1080, height: 560)
         .onAppear {
             account = accounts.first { $0.uuid == review.account }
             rematch()
@@ -137,17 +169,101 @@ struct QifReviewSheet: View {
 
     private var currency: String { account?.currency ?? "GBP" }
 
+    /// The payee to import as, with the bank text under it when they differ.
+    private func payeeCell(_ match: Qif.Match) -> some View {
+        let choice = choices[match.id]
+        return HStack(spacing: Space.xs) {
+            VStack(alignment: .leading, spacing: 0) {
+                TextField("Payee", text: payee(match.id), prompt: Text(match.row.payee))
+                    .labelsHidden()
+                    .textFieldStyle(.plain)
+                    .textInputSuggestions {
+                        ForEach(Suggestions.payees(payees, matching: choice?.payee ?? "").prefix(12)) { payee in
+                            Text(payee.name).textInputCompletion(payee.name)
+                        }
+                    }
+                if let choice, choice.payee.caseInsensitiveCompare(match.row.payee) != .orderedSame {
+                    Text(match.row.payee)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            if let help = choice?.help, choice?.edited == false {
+                Spacer(minLength: 0)
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundStyle(.secondary)
+                    .help(help)
+                    .accessibilityLabel(help)
+            }
+        }
+        .disabled(!match.checked)
+        .help("Bank text: \(match.row.payee)")
+    }
+
+    private func categoryCell(_ match: Qif.Match) -> some View {
+        Picker("Category", selection: category(match.id)) {
+            Text("None").tag(Category?.none)
+            ForEach(Suggestions.categories(categories, matching: "")) { category in
+                Text(category.path).tag(Category?.some(category))
+            }
+        }
+        .labelsHidden()
+        .disabled(!match.checked)
+    }
+
     private func checked(_ id: Int) -> Binding<Bool> {
         Binding(get: { matches.first { $0.id == id }?.checked ?? false },
                 set: { on in if let index = matches.firstIndex(where: { $0.id == id }) { matches[index].checked = on } })
     }
 
+    /// Typing a payee marks the row as yours; naming a payee fills its category when there's none.
+    private func payee(_ id: Int) -> Binding<String> {
+        Binding(get: { choices[id]?.payee ?? "" },
+                set: { name in
+                    guard var choice = choices[id], choice.payee != name else { return }
+                    choice.payee = name
+                    choice.edited = true
+                    if choice.category == nil, let payee = Suggestions.payee(named: name, in: payees), payee.name == name {
+                        choice.category = payee.category
+                    }
+                    choices[id] = choice
+                })
+    }
+
+    private func category(_ id: Int) -> Binding<Category?> {
+        Binding(get: { choices[id]?.category },
+                set: { category in
+                    guard var choice = choices[id], choice.category?.persistentModelID != category?.persistentModelID else { return }
+                    choice.category = category
+                    choice.edited = true
+                    choices[id] = choice
+                })
+    }
+
     private func rematch() {
-        guard let account else {
-            matches = Qif.match(review.rows, existing: [], lastReconciled: nil)
-            return
-        }
-        matches = Qif.match(review.rows, existing: account.transactions, lastReconciled: account.lastReconciled)
+        matches = Qif.match(review.rows, existing: account?.transactions ?? [], lastReconciled: account?.lastReconciled)
+        choices = model.qifChoices(for: matches, in: account)
+    }
+}
+
+extension AppModel {
+    /// How each row starts in the review sheet: a duplicate as the transaction
+    /// it matched, a new row as the rules or payees suggest, else its bank text.
+    func qifChoices(for matches: [Qif.Match], in account: Account?) -> [Int: QifChoice] {
+        let previews = ImportRuleBook.preview(matches, in: container)
+        let byUUID = Dictionary((account?.transactions ?? []).map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
+        let context = container.mainContext
+        return Dictionary(uniqueKeysWithValues: matches.map { match in
+            if let uuid = match.matched?.uuid, let transaction = byUUID[uuid] {
+                return (match.id, QifChoice(payee: transaction.payee, category: transaction.category))
+            }
+            if let preview = previews[match.id] {
+                let category = preview.categoryID.flatMap { context.model(for: $0) as? Category }
+                return (match.id, QifChoice(payee: preview.payee, category: category, source: preview.source, confirmations: preview.confirmations))
+            }
+            return (match.id, QifChoice(payee: match.row.payee))
+        })
     }
 }
 

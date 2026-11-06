@@ -128,7 +128,7 @@ public enum Qif {
     /// cleaned words or how they start ("CO-OP GROUP 070590" names "Coop").
     public static func names(_ bankText: String, _ payee: String) -> Bool {
         if bankText.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare(payee) == .orderedSame { return true }
-        let key = squashed(payee)
+        let key = payeeKey(payee)
         guard key.count >= 3 else { return false }
         let words = cleaned(bankText)
         return words.contains(key) || words.indices.contains { words[...$0].joined() == key }
@@ -153,6 +153,13 @@ public enum Qif {
     }
 
     static let noise: Set<String> = ["LTD", "LIMITED", "PLC", "INC", "GB", "UK", "STORES", "STORE", "MKTS", "CO", "THE", "PAYMENT", "PAYMENTS", "MBP", "GROUP", "LIMIT", "L"]
+
+    /// A payee's name cleaned like bank text, then joined: "The Noodle Bar" ->
+    /// "NOODLEBAR", "Co-op" -> "COOP", "B & Q" -> "B&Q".
+    public static func payeeKey(_ name: String) -> String {
+        let words = cleaned(name)
+        return words.isEmpty ? squashed(name) : words.joined()
+    }
 
     /// A name in capitals with only letters, digits and "&": "B & Q" -> "B&Q".
     static func squashed(_ name: String) -> String {

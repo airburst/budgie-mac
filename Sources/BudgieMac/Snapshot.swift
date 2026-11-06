@@ -134,10 +134,12 @@ enum Snapshot {
             }
             if only == nil || only?.contains("qif") == true {
                 // S-055: a bank QIF with one row already in the register.
+                // S-062: rows filled by a rule learned from that duplicate, a payee name,
+                // a near payee, and one left blank.
                 let open = (try? model.container.mainContext.fetch(Account.openAccounts)) ?? []
                 if let current = open.first(where: { $0.name == "Everyday Current" }) {
                     let file = URL(fileURLWithPath: "/tmp/BudgieMac-snapshot.qif")
-                    try? "!Type:Bank\nD25/10/2026\nPCORNER GROCER 0412\nT-81.02\n^\nD26/10/2026\nPBig Supermarket\nT-108.45\nMWeekly shop\n^\nD27/10/2026\nPEmployer Ltd\nT2345.67\n^\n"
+                    try? "!Type:Bank\nD25/10/2026\nPCORNER GROCER 0412\nT-81.02\n^\nD26/10/2026\nPBIG SUPERMARKET 22\nT-108.45\nMWeekly shop\n^\nD27/10/2026\nPEMPLOYER LTD\nT2345.67\n^\nD28/10/2026\nPCORNER GROCER 0413\nT-23.40\n^\nD29/10/2026\nPZETTLE_*THE NOODLE\nT-18.50\n^\n"
                         .write(to: file, atomically: true, encoding: .utf8)
                     for mode in ["light", "dark"] {
                         NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
