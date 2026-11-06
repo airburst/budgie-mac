@@ -99,6 +99,9 @@ public final class Transaction {
     public var reconciled: Bool = false
     /// The `uuid` of the other half of a transfer.
     public var transferUUID: UUID?
+    /// S-061: the payee text from the bank's QIF file, for an imported
+    /// transaction or one a QIF row matched as a duplicate.
+    public var bankText: String?
     public var createdAt: Date = Date.now
     public var updatedAt: Date?
 
@@ -167,6 +170,37 @@ public final class Payee {
         self.name = name
         self.category = category
         self.amount = amount
+    }
+}
+
+/// S-061: what a bank text means. One rule per bank text, direction, payee
+/// and category; `count` says how often you confirmed it.
+@Model
+public final class ImportRule {
+    public var uuid: UUID = UUID()
+    /// The cleaned bank text, words joined by spaces: "COOP", "SAINSBURYS PETROL".
+    public var bankText: String = ""
+    /// Money in (true) or out.
+    public var isDeposit: Bool = false
+    public var payee: String = ""
+    public var category: Category?
+    public var count: Int = 0
+    /// The most recent amounts it was confirmed for, as "12.99 -5.99".
+    /// Plain text: Decimal read back from JSON can pick up rounding errors.
+    public var amountsText: String = ""
+    public var lastUsed: Date = Date.now
+    public var createdAt: Date = Date.now
+
+    public init(bankText: String, isDeposit: Bool, payee: String, category: Category?) {
+        self.bankText = bankText
+        self.isDeposit = isDeposit
+        self.payee = payee
+        self.category = category
+    }
+
+    public var amounts: [Decimal] {
+        get { amountsText.split(separator: " ").compactMap { Decimal(string: String($0), locale: Locale(identifier: "en_US_POSIX")) } }
+        set { amountsText = newValue.map { "\($0)" }.joined(separator: " ") }
     }
 }
 
@@ -287,7 +321,7 @@ public enum BudgieSchema {
     public static let models: [any PersistentModel.Type] = [
         Account.self, Category.self, Transaction.self, AccountReconciliation.self,
         ScheduledTransaction.self, Payee.self, Envelope.self, EnvelopeCategory.self,
-        BudgetAllocation.self, BudgetTransfer.self, Preferences.self,
+        BudgetAllocation.self, BudgetTransfer.self, Preferences.self, ImportRule.self,
     ]
 
     public static func container(url: URL) throws -> ModelContainer {

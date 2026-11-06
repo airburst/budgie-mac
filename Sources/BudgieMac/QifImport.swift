@@ -46,17 +46,26 @@ extension AppModel {
         }
     }
 
-    /// Adds the ticked rows to the account, with one Undo.
-    func importQif(_ rows: [Qif.Row], into account: Account, undoManager: UndoManager?) {
+    /// Adds the ticked rows to the account, with one Undo, and learns what
+    /// each duplicate's bank text means from the transaction it matched (S-061).
+    func importQif(_ matches: [Qif.Match], into account: Account, undoManager: UndoManager?) {
         let context = container.mainContext
+        let book = ImportRuleBook(context: context)
+        let existing = Dictionary(account.transactions.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
+        for match in matches {
+            if let uuid = match.matched?.uuid, let transaction = existing[uuid] { book.learn(from: match.row, matched: transaction) }
+        }
         var added: [Transaction] = []
-        for row in rows {
+        for row in matches.filter(\.checked).map(\.row) {
             var draft = TransactionDraft(date: row.date)
             draft.payee = row.payee
             draft.notes = row.memo ?? ""
             let text = abs(row.amount).formatted(.number.precision(.fractionLength(2)).grouping(.never).locale(Locale(identifier: "en_US_POSIX")))
             if row.amount < 0 { draft.withdrawal = text } else { draft.deposit = text }
-            if let transaction = try? draft.add(to: account, in: context, locale: Locale(identifier: "en_US_POSIX")) { added.append(transaction) }
+            if let transaction = try? draft.add(to: account, in: context, locale: Locale(identifier: "en_US_POSIX")) {
+                transaction.bankText = row.payee
+                added.append(transaction)
+            }
         }
         try? context.save()
         sidebar = .account(account.uuid)
@@ -113,7 +122,7 @@ struct QifReviewSheet: View {
             ToolbarItem(placement: .confirmationAction) {
                 let count = matches.filter(\.checked).count
                 Button(count == 0 ? "Import" : "Import \(Words.count(count, "Transaction").capitalized)") {
-                    if let account { model.importQif(matches.filter(\.checked).map(\.row), into: account, undoManager: undoManager) }
+                    if let account { model.importQif(matches, into: account, undoManager: undoManager) }
                     dismiss()
                 }
                 .disabled(account == nil || count == 0)

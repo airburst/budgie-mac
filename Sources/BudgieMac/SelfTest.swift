@@ -248,13 +248,28 @@ enum SelfTest {
             // S-055: a QIF row that's already there is a duplicate; the new one imports.
             if let qif = try? Qif.parse("!Type:Bank\nD01/02/2031\nPSelf-test QIF\nT-12.34\n^") {
                 let before = wallet.transactions.count
-                model.importQif(qif.rows, into: wallet, undoManager: nil)
+                model.importQif(Qif.match(qif.rows, existing: wallet.transactions, lastReconciled: nil), into: wallet, undoManager: nil)
                 check("QIF rows import into the account", wallet.transactions.count == before + 1)
                 let again = Qif.match(qif.rows, existing: wallet.transactions, lastReconciled: nil)
                 check("importing the same QIF again flags it as a duplicate", again.first?.status == .duplicate)
                 // S-060: and says which transaction it matched.
                 let added = wallet.transactions.first { $0.payee == "Self-test QIF" }
                 check("a duplicate names the transaction it matched", added != nil && again.first?.matched?.uuid == added?.uuid)
+                check("an imported transaction keeps its bank text", added?.bankText == "Self-test QIF")
+            }
+
+            // S-061: an import learns from the transactions you entered, and the next one fills in.
+            if let category = try? context.fetch(FetchDescriptor<Category>()).first(where: { !$0.softDeleted && $0.kind == .expense }) {
+                let typed = Transaction(account: wallet, date: Day.parse("2031-03-01")!, payee: "Self-test Cafe", amount: Decimal(string: "-4.20")!, category: category)
+                context.insert(typed)
+                let first = (try? Qif.parse("!Type:Bank\nD02/03/2031\nPSUMUP *SELFTEST CAF\nT-4.20\n^"))?.rows ?? []
+                model.importQif(Qif.match(first, existing: wallet.transactions, lastReconciled: nil), into: wallet, undoManager: nil)
+                check("a duplicate teaches its bank text", typed.bankText == "SUMUP *SELFTEST CAF")
+                let next = ImportRuleBook(context: context).suggestion(for: "SumUp  *SELFTEST CAF", amount: Decimal(string: "-3.80")!)
+                check("the next import fills in the payee and category it learned", next?.payee == "Self-test Cafe" && next?.category === category && next?.source == .rule)
+                model.importQif(Qif.match(first, existing: wallet.transactions, lastReconciled: nil), into: wallet, undoManager: nil)
+                let rules = (try? context.fetch(FetchDescriptor<ImportRule>()))?.filter { $0.payee == "Self-test Cafe" } ?? []
+                check("importing the same file again learns nothing new", rules.count == 1 && rules.first?.count == 1)
             }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.

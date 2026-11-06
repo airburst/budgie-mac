@@ -37,13 +37,15 @@ Acceptance:
 - [unit] An Import Rule stores the cleaned bank text, money in or out, an optional amount, the payee, the category, a count and the date last used.
 - [unit] Each imported transaction keeps its bank text.
 - [unit] Matching tries, in order: a rule for this bank text and amount, a rule for this bank text and direction, an exact payee name, a payee that is a whole word of the cleaned text, then a near match. A rule only fills the category when at least 60% of what it learned agrees.
-- [unit] On the Joint account QIF from Nov 2026 (kept as a test fixture with names reduced), learning month by month gets at least 70% of categories right and 80% of filled categories right.
+- [unit] On a real bank QIF and a copy of the store in /tmp (`ImportEvalTests`, off unless `IMPORT_EVAL_QIF` and `IMPORT_EVAL_STORE` are set; real data never goes in the repo), importing a month at a time gets at least 70% of categories right and 80% of filled categories right.
 - [self] The first import learns from every existing transaction it matches, so the second import of new rows fills their payee and category.
+Status: done (Joint account, Dec 2025 to Nov 2026: 481 of 680 duplicates right (70%), 86% of filled categories right, 124 blank; 44% in the first month, about 78% from July. Suggestions show in S-062.)
 
 ### S-062 Review and correct payee and category before importing
 As the user, the review sheet shows the payee and category each row will get, and when I change one, BudgieMac learns from it.
 Depends: S-061
 Acceptance:
+- [unit] Duplicates in the file teach its new rows before the sheet suggests; Cancel saves nothing it learned.
 - [snap] Payee and Category columns are filled where a rule or payee matched and blank otherwise; the bank text shows under the payee.
 - [snap] A filled row has a small symbol with the tooltip "Learned from 14 earlier imports".
 - [unit] A change made in the sheet counts more than a learned match.
@@ -63,3 +65,10 @@ Acceptance:
 - [snap] One row per rule: bank text, payee, category, times confirmed; a search field; Delete with Undo.
 - [snap] With no rules: an empty state that says rules are learned from QIF imports.
 - [self] Deleting a rule stops it filling the next import.
+
+### S-065 Keep import rules in backups and exports
+As the user, restoring a backup or moving to another Mac keeps what imports have learned.
+Depends: S-061
+Acceptance:
+- [unit] Export Budgie Data and backups carry Import Rules and each transaction's bank text in a way Budgie ignores; importing the file brings them back.
+
