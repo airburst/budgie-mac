@@ -36,6 +36,9 @@ new term.
 | Available to budget   | Money received that hasn't been assigned to an envelope yet                                         | to be budgeted, unassigned                                |
 | Budgie data file      | The file Budgie exports from Settings > Advanced > Export Data                                      | portable package, data package, backup                    |
 | Backup                | A copy of all BudgieMac data the app keeps in its backup folder                                     | snapshot, archive                                         |
+| Bank text             | The payee text as your bank wrote it in a QIF file, like "CO-OP GROUP 070590"                       | description, memo, raw payee                              |
+| Duplicate             | A QIF row that's already in the account, paired with the transaction it matches                     | match, existing                                           |
+| Import Rule           | What a bank text means: the payee and category BudgieMac fills in, learned from your choices        | mapping, alias, auto-category                             |
 
 ## Actions
 
@@ -52,6 +55,7 @@ new term.
 | Skip                                | Move a scheduled transaction to its next due date without recording it             | Ignore, Dismiss          |
 | Import Budgie Data                  | Replace all BudgieMac data with a Budgie data file                                 | Restore, Load, Sync      |
 | Export Budgie Data                  | Write all data to a Budgie data file                                               | Back Up, Save As         |
+| Import QIF                          | Add transactions from a bank's QIF file to one account, after review               | Import Transactions, Load |
 
 ## Retired Budgie names
 
