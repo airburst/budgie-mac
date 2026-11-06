@@ -52,4 +52,51 @@ struct QifTests {
         #expect(matches.map(\.checked) == [false, true, true, false])
         #expect(matches[0].duplicateOf == existing[0].uuid)
     }
+
+    @Test("S-060: a duplicate pairs with the transaction its bank text names, then the nearest date")
+    @MainActor
+    func pairsByName() {
+        let asda = Transaction(account: nil, date: day("2026-04-07"), payee: "Asda", amount: -1.5)
+        let parking = Transaction(account: nil, date: day("2026-04-07"), payee: "Parking", amount: -1.5)
+        let rows = [
+            Qif.Row(date: day("2026-04-07"), payee: "MIPERMIT LTD", amount: -1.5),
+            Qif.Row(date: day("2026-04-08"), payee: "ASDA  STORES 4345", amount: -1.5),
+        ]
+        let matches = Qif.match(rows, existing: [asda, parking], lastReconciled: nil)
+        #expect(matches.map(\.duplicateOf) == [parking.uuid, asda.uuid])
+        #expect(matches[1].matched == Qif.Matched(uuid: asda.uuid, payee: "Asda", date: day("2026-04-07"), amount: -1.5))
+    }
+
+    @Test("S-060: with no name to go on, the nearest date wins")
+    @MainActor
+    func pairsByDate() {
+        let early = Transaction(account: nil, date: day("2026-07-28"), payee: "Kindle", amount: -5.99)
+        let late = Transaction(account: nil, date: day("2026-07-31"), payee: "Books", amount: -5.99)
+        let rows = [Qif.Row(date: day("2026-07-31"), payee: "amazon.co.uk*6D7MG", amount: -5.99)]
+        #expect(Qif.match(rows, existing: [early, late], lastReconciled: nil).first?.duplicateOf == late.uuid)
+    }
+
+    @Test("S-060: bank text loses processors, references, numbers and filler words")
+    func cleaning() {
+        #expect(Qif.cleaned("CO-OP GROUP 070590") == ["COOP"])
+        #expect(Qif.cleaned("ZETTLE_*THE BERTIN") == ["BERTIN"])
+        #expect(Qif.cleaned("SumUp  *CHAO CHAO") == ["CHAO", "CHAO"])
+        #expect(Qif.cleaned("PAYPAL_*THE BERTIN") == ["BERTIN"])
+        #expect(Qif.cleaned("AMZNMktplace*BB9G4") == ["AMZNMKTPLACE"])
+        #expect(Qif.cleaned("SAINSBURYS S/MKTS") == ["SAINSBURYS", "S"])
+        #expect(Qif.cleaned("LNK COOPERATIVE SN") == ["COOPERATIVE", "SN"])
+        #expect(Qif.cleaned("VODAFONE LTD") == ["VODAFONE"])
+    }
+
+    @Test("S-060: bank text names a payee by whole words only")
+    func naming() {
+        #expect(Qif.names("CO-OP GROUP 070590", "Coop"))
+        #expect(Qif.names("B & Q 1330", "B&Q"))
+        #expect(Qif.names("SCOTTISHPOWER", "Scottish Power"))
+        #expect(Qif.names("SAINSBURYS PETROL", "Sainsburys"))
+        #expect(Qif.names("vodafone", "Vodafone"))
+        #expect(!Qif.names("MARKS&SPENCER PLC", "Mark"))
+        #expect(!Qif.names("MIPERMIT LTD", "Parking"))
+        #expect(!Qif.names("ASDA", "As"))
+    }
 }

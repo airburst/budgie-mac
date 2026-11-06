@@ -93,14 +93,17 @@ struct QifReviewSheet: View {
                         .disabled(match.status == .reconciled)
                 }
                 .width(24)
-                TableColumn("Status") { (match: Qif.Match) in StatusBadge(status: match.status) }
-                    .width(min: 100, ideal: 150)
+                TableColumn("Status") { (match: Qif.Match) in StatusBadge(match: match, currency: currency) }
+                    .width(min: 120, ideal: 240)
                 TableColumn("Date") { (match: Qif.Match) in Text(Day.formatted(match.row.date)).monospacedDigit() }
-                    .width(min: 80, ideal: 96)
-                TableColumn("Payee") { (match: Qif.Match) in Text(match.row.payee).lineLimit(1) }
+                    .width(min: 80, ideal: 96, max: 120)
+                TableColumn("Payee") { (match: Qif.Match) in Text(match.row.payee).lineLimit(1).help(match.row.payee) }
+                    .width(min: 120, ideal: 170)
                 TableColumn("Withdrawal") { (match: Qif.Match) in AmountCell(amount: -match.row.amount, currency: currency) }
+                    .width(min: 80, ideal: 100, max: 140)
                     .alignment(.trailing)
                 TableColumn("Deposit") { (match: Qif.Match) in AmountCell(amount: match.row.amount, currency: currency) }
+                    .width(min: 80, ideal: 100, max: 140)
                     .alignment(.trailing)
             }
         }
@@ -116,7 +119,7 @@ struct QifReviewSheet: View {
                 .disabled(account == nil || count == 0)
             }
         }
-        .frame(width: 720, height: 520)
+        .frame(width: 880, height: 520)
         .onAppear {
             account = accounts.first { $0.uuid == review.account }
             rematch()
@@ -139,12 +142,27 @@ struct QifReviewSheet: View {
     }
 }
 
+/// New, Before Last Reconcile, or "Duplicate of Coop, 4 Nov" (S-060).
 private struct StatusBadge: View {
-    let status: Qif.Status
+    let match: Qif.Match
+    let currency: String
 
     var body: some View {
-        Label(status.rawValue, systemImage: status == .new ? "plus.circle" : status == .duplicate ? "doc.on.doc" : "lock")
-            .foregroundStyle(status == .new ? .primary : .secondary)
+        Label(text, systemImage: match.status == .new ? "plus.circle" : match.status == .duplicate ? "doc.on.doc" : "lock")
+            .foregroundStyle(match.status == .new ? .primary : .secondary)
+            .lineLimit(1)
+            .help(help)
+    }
+
+    private var text: String {
+        guard let matched = match.matched else { return match.status.rawValue }
+        let day = matched.date.formatted(Date.FormatStyle(timeZone: Day.calendar.timeZone).day().month(.abbreviated))
+        return "Duplicate of \(matched.payee), \(day)"
+    }
+
+    private var help: String {
+        guard let matched = match.matched else { return match.status == .reconciled ? "On or before this account's last reconcile" : "Not in this account yet" }
+        return "Already in this account: \(matched.payee), \(Day.formatted(matched.date, .long)), \(Money.string(matched.amount, currency: currency))"
     }
 }
 

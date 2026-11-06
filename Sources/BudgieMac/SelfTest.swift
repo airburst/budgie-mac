@@ -252,6 +252,9 @@ enum SelfTest {
                 check("QIF rows import into the account", wallet.transactions.count == before + 1)
                 let again = Qif.match(qif.rows, existing: wallet.transactions, lastReconciled: nil)
                 check("importing the same QIF again flags it as a duplicate", again.first?.status == .duplicate)
+                // S-060: and says which transaction it matched.
+                let added = wallet.transactions.first { $0.payee == "Self-test QIF" }
+                check("a duplicate names the transaction it matched", added != nil && again.first?.matched?.uuid == added?.uuid)
             }
 
             // S-005: a register of 2,000 transactions opens in under 300 ms.
