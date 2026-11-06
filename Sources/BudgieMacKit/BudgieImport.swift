@@ -43,6 +43,7 @@ public enum BudgieImport {
         public var envelopeCategories = 0
         public var budgetAllocations = 0
         public var budgetTransfers = 0
+        public var importRules = 0
     }
 
     /// Checks a file before anything is replaced, so the confirmation can name what it holds.
@@ -96,6 +97,7 @@ public enum BudgieImport {
         func deleteAll<T: PersistentModel>(_ type: T.Type) throws {
             for row in try context.fetch(FetchDescriptor<T>()) { context.delete(row) }
         }
+        try deleteAll(ImportRule.self)
         try deleteAll(BudgetTransfer.self)
         try deleteAll(BudgetAllocation.self)
         try deleteAll(EnvelopeCategory.self)
@@ -156,6 +158,7 @@ public enum BudgieImport {
             transaction.cleared = row.cleared
             transaction.reconciled = row.reconciled
             transaction.transferUUID = row.transferTransactionPublicId.map(uuid)
+            transaction.bankText = row.bankText
             stamp(transaction, row, \.createdAt, \.updatedAt)
             context.insert(transaction)
             summary.transactions += 1
@@ -232,6 +235,19 @@ public enum BudgieImport {
             stamp(move, row, \.createdAt, \.updatedAt)
             context.insert(move)
             summary.budgetTransfers += 1
+        }
+
+        // S-065: BudgieMac's import rules; a file from Budgie has none.
+        for row in package.budgieMacImportRules ?? [] where row.deletedAt == nil {
+            let rule = ImportRule(bankText: row.bankText, isDeposit: row.isDeposit, payee: row.payee,
+                                  category: row.categoryPublicId.flatMap { categories[$0] })
+            rule.uuid = uuid(row.publicId)
+            rule.count = row.count
+            rule.amountsText = row.amounts.joined(separator: " ")
+            if let date = timestamp(row.lastUsed) { rule.lastUsed = date }
+            if let date = row.createdAt.flatMap(timestamp) { rule.createdAt = date }
+            context.insert(rule)
+            summary.importRules += 1
         }
 
         let preferences = Preferences()
@@ -330,6 +346,8 @@ extension BudgieImport {
             var publicId: String, createdAt: String?, updatedAt: String?, deletedAt: String?
             var accountPublicId: String, categoryPublicId: String?, date: String, payee: String, amount: Double
             var notes: String?, cleared: Bool, reconciled: Bool, transferTransactionPublicId: String?
+            /// S-065: BudgieMac only.
+            var bankText: String?
         }
         struct ReconciliationRow: Decodable, Synced, Sendable {
             var publicId: String, createdAt: String?, updatedAt: String?, deletedAt: String?
@@ -357,6 +375,12 @@ extension BudgieImport {
             var publicId: String, createdAt: String?, updatedAt: String?, deletedAt: String?
             var envelopePublicId: String, month: String, assigned: Double
         }
+        /// S-065: BudgieMac only; Budgie ignores it.
+        struct ImportRuleRow: Decodable, Synced, Sendable {
+            var publicId: String, createdAt: String?, updatedAt: String?, deletedAt: String?
+            var bankText: String, isDeposit: Bool, payee: String, categoryPublicId: String?, count: Int
+            var amounts: [String], lastUsed: String
+        }
         struct BudgetTransferRow: Decodable, Synced, Sendable {
             var publicId: String, createdAt: String?, updatedAt: String?, deletedAt: String?
             var fromEnvelopePublicId: String, toEnvelopePublicId: String, month: String, amount: Double, notes: String?
@@ -374,6 +398,7 @@ extension BudgieImport {
         var envelopeCategories: [EnvelopeCategoryRow]
         var budgetAllocations: [AllocationRow]
         var budgetTransfers: [BudgetTransferRow]
+        var budgieMacImportRules: [ImportRuleRow]?
 
         /// Live (not tombstoned) rows, for the confirmation and progress text.
         public var accountCount: Int { accounts.count { $0.deletedAt == nil } }
@@ -413,6 +438,7 @@ extension BudgieImport {
             for shortcut in preferences.accountShortcuts ?? [] {
                 try need(shortcut.accountPublicId, in: accountIds, "an account")
             }
+            for row in budgieMacImportRules ?? [] { try need(row.categoryPublicId, in: categoryIds, "a category") }
         }
     }
 }

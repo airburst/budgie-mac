@@ -17,6 +17,7 @@ public enum BudgieExport {
         let payees = all(Payee.self), envelopes = all(Envelope.self), links = all(EnvelopeCategory.self)
         let allocations = all(BudgetAllocation.self), moves = all(BudgetTransfer.self)
         let preferences = all(Preferences.self).first
+        let rules = all(ImportRule.self).sorted { ($0.bankText, $0.payee) < ($1.bankText, $1.payee) }
 
         func sync(_ uuid: UUID, _ created: Date, _ updated: Date?) -> [(String, JSON)] {
             [("publicId", .string(id(uuid))), ("createdAt", .string(timestamp(created))),
@@ -67,7 +68,7 @@ public enum BudgieExport {
                 ("payee", .string(t.payee)), ("amount", .number(t.amount)), ("notes", text(t.notes)), ("cleared", .bool(t.cleared)),
                 ("reconciled", .bool(t.reconciled)),
                 ("transferTransactionPublicId", ref(t.transferUUID.flatMap { link in transactions.contains { $0.uuid == link } ? link : nil })),
-            ]) })),
+            ] + (t.bankText.map { [("bankText", JSON.string($0))] } ?? [])) })),
             ("accountReconciliations", .array(reconciliations.filter { $0.account != nil }.map { r in .object(sync(r.uuid, r.createdAt, r.updatedAt) + [
                 ("accountPublicId", ref(r.account?.uuid)), ("date", day(r.date)), ("balance", .number(r.balance)), ("notes", text(r.notes)),
             ]) })),
@@ -94,6 +95,16 @@ public enum BudgieExport {
                 ("month", .string(m.month)), ("amount", .number(m.amount)), ("notes", text(m.notes)),
             ]) })),
         ]
+        // S-065: what QIF imports learned. Budgie ignores keys it doesn't know,
+        // and its checksum covers the whole package, so both apps still agree.
+        if !rules.isEmpty {
+            package.append(("budgieMacImportRules", .array(rules.map { r in .object(sync(r.uuid, r.createdAt, nil) + [
+                ("bankText", .string(r.bankText)), ("isDeposit", .bool(r.isDeposit)), ("payee", .string(r.payee)),
+                ("categoryPublicId", ref(r.category.flatMap { category in categories.contains { $0 === category } ? category.uuid : nil })),
+                ("count", .number(Decimal(r.count))), ("amounts", .array(r.amounts.map { .string("\($0)") })),
+                ("lastUsed", .string(timestamp(r.lastUsed))),
+            ]) })))
+        }
         // Hash with an empty checksum, then write the hash in (Budgie's `checksum`).
         let digest = SHA256.hash(data: Data(JSON.object(package).text.utf8)).map { String(format: "%02x", $0) }.joined()
         if case .object(var manifest) = package[0].1 {

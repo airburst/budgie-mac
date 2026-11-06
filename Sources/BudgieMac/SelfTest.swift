@@ -354,6 +354,15 @@ enum SelfTest {
             // S-054: restore replaces the data with a backup, without a relaunch.
             let folder = URL(fileURLWithPath: "/tmp/BudgieMac-selftest-backups", isDirectory: true)
             try? FileManager.default.removeItem(at: folder)
+            // S-065: what imports learned, as rule and bank text lines, before the backup.
+            func learning() -> [String] {
+                let rules = ((try? context.fetch(FetchDescriptor<ImportRule>())) ?? []).map { "\($0.bankText) \($0.payee) \($0.category?.uuid.uuidString ?? "-") \($0.count)" }
+                let texts = ((try? context.fetch(FetchDescriptor<Transaction>())) ?? []).compactMap { transaction in
+                    transaction.bankText.map { "\(transaction.uuid) \($0)" }
+                }
+                return (rules + texts).sorted()
+            }
+            let learnedBefore = learning()
             if let backup = try? Backups.write(BudgieExport.data(from: context), to: folder) {
                 let count = (try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0
                 _ = try? model.addTransaction(spend.with(withdrawal: "1"), to: wallet, undoManager: nil)
@@ -361,6 +370,7 @@ enum SelfTest {
                 check("restoring a backup brings the data back", restored != nil
                       && ((try? context.fetchCount(FetchDescriptor<Transaction>())) ?? 0) == count)
                 check("backups are listed newest first", Backups.list(folder).first?.url.lastPathComponent == backup.lastPathComponent)
+                check("restoring a backup keeps import rules and bank text", !learnedBefore.isEmpty && learning() == learnedBefore)
             }
 
             // S-049: the menu bar has every shortcut, and items that can't apply are off.

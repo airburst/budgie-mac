@@ -170,6 +170,29 @@ struct BudgieExportTests {
         #expect(prefs?.accountOrder == order, "The dragged account order survives export and import")
     }
 
+    @Test("S-065: import rules and bank text survive export and import; a Budgie file brings none")
+    func importRules() throws {
+        let first = try BudgieSchema.inMemory()
+        try BudgieImport.replaceAll(in: first.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
+        addLearning(to: first.mainContext)
+        let exported = BudgieExport.data(from: first.mainContext, exportedAt: Date(timeIntervalSince1970: 1_800_000_000))
+        let second = try BudgieSchema.inMemory()
+        let summary = try BudgieImport.replaceAll(in: second.mainContext, with: BudgieImport.read(exported))
+        #expect(summary.importRules == 2)
+        func rules(_ context: ModelContext) throws -> [String] {
+            try context.fetch(FetchDescriptor<ImportRule>()).map {
+                "\($0.uuid) \($0.bankText) \($0.isDeposit) \($0.payee) \($0.category?.uuid.uuidString ?? "-") \($0.count) \($0.amountsText) \(Int($0.lastUsed.timeIntervalSince1970))"
+            }.sorted()
+        }
+        #expect(try rules(second.mainContext) == rules(first.mainContext))
+        let banked = try second.mainContext.fetch(FetchDescriptor<Transaction>()).compactMap(\.bankText)
+        #expect(banked == ["CO-OP GROUP 070590"])
+
+        // Budgie Data from Budgie has no rules: importing it replaces the ones here.
+        try BudgieImport.replaceAll(in: second.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
+        #expect(try second.mainContext.fetch(FetchDescriptor<ImportRule>()).isEmpty)
+    }
+
     @Test("Numbers and strings are written as JavaScript writes them")
     func javascriptForms() {
         #expect(BudgieExport.JSON.number(Decimal(string: "70.20")!) == "70.2")
@@ -188,7 +211,25 @@ func writeExport() throws {
     try BudgieImport.replaceAll(in: container.mainContext, with: BudgieImport.read(BudgieImportTests.fixture))
     let first = container.mainContext.fetch2(Account.self).first!
     first.notes = "Café \"quoted\"\nline two"
+    addLearning(to: container.mainContext)
     try BudgieExport.data(from: container.mainContext).write(to: URL(fileURLWithPath: ProcessInfo.processInfo.environment["BUDGIEMAC_EXPORT_TO"]!))
+}
+
+/// Two rules (one with a category, one without) and one transaction's bank text.
+@MainActor
+func addLearning(to context: ModelContext) {
+    let transaction = context.fetch2(Transaction.self).sorted { $0.uuid.uuidString < $1.uuid.uuidString }.first!
+    transaction.bankText = "CO-OP GROUP 070590"
+    let category = context.fetch2(Category.self).sorted { $0.uuid.uuidString < $1.uuid.uuidString }.first
+    let rule = ImportRule(bankText: "COOP", isDeposit: false, payee: "Coop", category: category)
+    rule.count = 3
+    rule.amounts = [Decimal(string: "-12.05")!, Decimal(string: "-0.1")!]
+    rule.lastUsed = Date(timeIntervalSince1970: 1_790_000_000)
+    context.insert(rule)
+    let other = ImportRule(bankText: "XBRIDGE LIMITED", isDeposit: true, payee: "Mark", category: nil)
+    other.count = 1
+    other.lastUsed = Date(timeIntervalSince1970: 1_790_000_000)
+    context.insert(other)
 }
 
 private extension ModelContext {

@@ -86,4 +86,6 @@ As the user, restoring a backup or moving to another Mac keeps what imports have
 Depends: S-061
 Acceptance:
 - [unit] Export Budgie Data and backups carry Import Rules and each transaction's bank text in a way Budgie ignores; importing the file brings them back.
+- [self] Restoring a backup keeps Import Rules and bank text.
+Status: done (rules go in a top-level `budgieMacImportRules` list and bank text in a `bankText` field on transactions, both only when there are any, so other exports are byte for byte as before. Budgie's own `parsePortableData` accepts the file, and its checksum covers the rules. Import Budgie Data replaces the rules too, so a file from Budgie leaves none.)
 
