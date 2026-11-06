@@ -1,5 +1,16 @@
 # BudgieMac changelog
 
+## 1.2.0
+
+- Import a QIF file from the account's toolbar
+- Backups and Export Budgie Data keep what QIF imports have learned (S-065)
+- See, recategorise and delete what QIF imports have learned in Settings > Import Rules (S-064)
+- Recategorising an imported transaction teaches the next QIF import, and Undo takes it back (S-063)
+- The QIF review sheet fills each row's payee and category from what you chose before, and learns from your changes (S-062)
+- QIF imports learn what each bank text means from the transactions you entered (S-061)
+- QIF duplicates pair with the transaction they name and say which one it is (S-060)
+- Plan imports that learn payees and categories from your choices (S-060 to S-064)
+
 ## 1.1.2
 
 - Forecast chart fills at least half the page
