@@ -25,7 +25,7 @@ Acceptance:
 - [snap] A Duplicate row says which transaction it matched, as "Duplicate of Coop, 4 Nov", with the full date, payee and amount in its tooltip.
 - [self] Importing the same QIF twice marks every row as a duplicate of the transaction the first import added.
 UX:
-- Flow: File > Import QIF… (⌥⌘I) or drop on a register -> review sheet -> Duplicate rows show their match -> Import
+- Flow: File > Import QIF… (⌥⌘I), the Import QIF… button in the register's toolbar, or drop on a register -> review sheet -> Duplicate rows show their match -> Import
 - Surface: the existing review sheet (one short task that must finish or cancel)
 - Words: "Duplicate of Coop, 4 Nov"; tooltip "Already in this account: Coop, 4 November 2026, -£12.05"
 Status: done (the sheet is wider, 880 pt, so the match and the bank text fit; the bank text has a tooltip)

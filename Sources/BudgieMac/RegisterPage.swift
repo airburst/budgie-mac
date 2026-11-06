@@ -182,6 +182,8 @@ struct RegisterPage: View {
                 .help("Reconcile this account against a statement")
             Button("Forecast", systemImage: "chart.line.uptrend.xyaxis") { model.forecastFor = model.openAccount }
                 .help("Forecast this account's balance from its scheduled transactions")
+            Button("Import QIF…", systemImage: "square.and.arrow.down") { model.chooseQifFile() }
+                .help("Import transactions from your bank's QIF file into this account (⌥⌘I)")
         }
         ToolbarItem {
             Button("Add Transaction", systemImage: "plus") { model.newTransaction() }
