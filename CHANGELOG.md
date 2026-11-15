@@ -1,5 +1,9 @@
 # BudgieMac changelog
 
+## 1.2.1
+
+- Fix the QIF review sheet freezing when you scroll it
+
 ## 1.2.0
 
 - Import a QIF file from the account's toolbar
