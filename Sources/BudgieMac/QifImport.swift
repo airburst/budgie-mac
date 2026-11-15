@@ -115,6 +115,7 @@ struct QifReviewSheet: View {
     @State private var choices: [Int: QifChoice] = [:]
 
     var body: some View {
+        let sorted = Suggestions.categories(categories, matching: "")
         VStack(spacing: 0) {
             Form {
                 Picker("Account", selection: $account) {
@@ -136,9 +137,13 @@ struct QifReviewSheet: View {
                     .width(min: 120, ideal: 250)
                 TableColumn("Date") { (match: Qif.Match) in Text(Day.formatted(match.row.date)).monospacedDigit() }
                     .width(min: 80, ideal: 88, max: 120)
-                TableColumn("Payee") { (match: Qif.Match) in payeeCell(match) }
+                TableColumn("Payee") { (match: Qif.Match) in
+                    QifPayeeCell(match: match, choice: choices[match.id], payee: payee(match.id), payees: payees)
+                }
                     .width(min: 140, ideal: 190)
-                TableColumn("Category") { (match: Qif.Match) in categoryCell(match) }
+                TableColumn("Category") { (match: Qif.Match) in
+                    QifCategoryCell(category: category(match.id), categories: sorted, enabled: match.checked)
+                }
                     .width(min: 120, ideal: 170)
                 TableColumn("Withdrawal") { (match: Qif.Match) in AmountCell(amount: -match.row.amount, currency: currency) }
                     .width(min: 80, ideal: 96, max: 140)
@@ -161,6 +166,7 @@ struct QifReviewSheet: View {
             }
         }
         .frame(width: 1080, height: 560)
+        .noInitialFocus()
         .onAppear {
             account = accounts.first { $0.uuid == review.account }
             rematch()
@@ -168,49 +174,6 @@ struct QifReviewSheet: View {
     }
 
     private var currency: String { account?.currency ?? "GBP" }
-
-    /// The payee to import as, with the bank text under it when they differ.
-    private func payeeCell(_ match: Qif.Match) -> some View {
-        let choice = choices[match.id]
-        return HStack(spacing: Space.xs) {
-            VStack(alignment: .leading, spacing: 0) {
-                TextField("Payee", text: payee(match.id), prompt: Text(match.row.payee))
-                    .labelsHidden()
-                    .textFieldStyle(.plain)
-                    .textInputSuggestions {
-                        ForEach(Suggestions.payees(payees, matching: choice?.payee ?? "").prefix(12)) { payee in
-                            Text(payee.name).textInputCompletion(payee.name)
-                        }
-                    }
-                if let choice, choice.payee.caseInsensitiveCompare(match.row.payee) != .orderedSame {
-                    Text(match.row.payee)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            if let help = choice?.help, choice?.edited == false {
-                Spacer(minLength: 0)
-                Image(systemName: "clock.arrow.circlepath")
-                    .foregroundStyle(.secondary)
-                    .help(help)
-                    .accessibilityLabel(help)
-            }
-        }
-        .disabled(!match.checked)
-        .help("Bank text: \(match.row.payee)")
-    }
-
-    private func categoryCell(_ match: Qif.Match) -> some View {
-        Picker("Category", selection: category(match.id)) {
-            Text("None").tag(Category?.none)
-            ForEach(Suggestions.categories(categories, matching: "")) { category in
-                Text(category.path).tag(Category?.some(category))
-            }
-        }
-        .labelsHidden()
-        .disabled(!match.checked)
-    }
 
     private func checked(_ id: Int) -> Binding<Bool> {
         Binding(get: { matches.first { $0.id == id }?.checked ?? false },
@@ -264,6 +227,66 @@ extension AppModel {
             }
             return (match.id, QifChoice(payee: match.row.payee))
         })
+    }
+}
+
+/// The payee to import as, with the bank text under it when they differ.
+private struct QifPayeeCell: View {
+    let match: Qif.Match
+    let choice: QifChoice?
+    @Binding var payee: String
+    let payees: [Payee]
+    /// Suggestions only while typing here: a suggestion list in a row that
+    /// scrolls out of the table throws in AppKit and freezes the sheet.
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: Space.xs) {
+            VStack(alignment: .leading, spacing: 0) {
+                TextField("Payee", text: $payee, prompt: Text(match.row.payee))
+                    .labelsHidden()
+                    .textFieldStyle(.plain)
+                    .focused($focused)
+                    .textInputSuggestions {
+                        ForEach(Suggestions.payees(payees, matching: focused ? payee : "").prefix(12)) { payee in
+                            Text(payee.name).textInputCompletion(payee.name)
+                        }
+                    }
+                if let choice, choice.payee.caseInsensitiveCompare(match.row.payee) != .orderedSame {
+                    Text(match.row.payee)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            if let help = choice?.help, choice?.edited == false {
+                Spacer(minLength: 0)
+                Image(systemName: "clock.arrow.circlepath")
+                    .foregroundStyle(.secondary)
+                    .help(help)
+                    .accessibilityLabel(help)
+            }
+        }
+        .disabled(!match.checked)
+        .help("Bank text: \(match.row.payee)")
+    }
+}
+
+private struct QifCategoryCell: View {
+    @Binding var category: Category?
+    /// Sorted by path, once for the whole table.
+    let categories: [Category]
+    let enabled: Bool
+
+    var body: some View {
+        Picker("Category", selection: $category) {
+            Text("None").tag(Category?.none)
+            ForEach(categories) { category in
+                Text(category.path).tag(Category?.some(category))
+            }
+        }
+        .labelsHidden()
+        .disabled(!enabled)
     }
 }
 
